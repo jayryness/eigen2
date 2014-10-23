@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="dx11\commonDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="dx11\RendererDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="Display.h" />
+    <ClInclude Include="dx11\DisplayDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="Format.h" />
+    <ClInclude Include="dx11\TextureDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="dx11\FormatDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="TargetSet.h" />
+    <ClInclude Include="dx11\TargetSetDx11.h">
+      <Filter>dx11</Filter>
+    </ClInclude>
+    <ClInclude Include="Worklist.h" />
+    <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="RenderPort.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="win">
+      <UniqueIdentifier>{6537e55d-7f70-46e6-8dc7-09b2bcac0291}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx11">
+      <UniqueIdentifier>{d90a1462-6c9b-4a2f-abed-cc2ebafe358a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="dx11\RendererDx11.cpp">
+      <Filter>dx11</Filter>
+    </ClCompile>
+    <ClCompile Include="dx11\DisplayDx11.cpp">
+      <Filter>dx11</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="dx11\TextureDx11.cpp">
+      <Filter>dx11</Filter>
+    </ClCompile>
+    <ClCompile Include="TargetSet.cpp" />
+    <ClCompile Include="dx11\TargetSetDx11.cpp">
+      <Filter>dx11</Filter>
+    </ClCompile>
+    <ClCompile Include="Worklist.cpp" />
+    <ClCompile Include="Pipeline.cpp" />
+  </ItemGroup>
+</Project>
