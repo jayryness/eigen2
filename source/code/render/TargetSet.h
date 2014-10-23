@@ -24,11 +24,12 @@ namespace eigen
 
         struct Config
         {
+                                    Config();
             Texture*                textures[MaxTextures];
             Texture::Slice          slices  [MaxTextures];
             //Buffer*               buffers [MaxBuffers];
             //Buffer::Range         ranges  [MaxBuffers];
-            Texture*                zbuffer                     = nullptr;
+            Texture*                zbuffer                     = 0;
             Texture::Slice          zbufferSlice;
         };
 
@@ -56,12 +57,22 @@ namespace eigen
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
 
+    inline TargetSet::Config::Config()
+    {
+        memset(textures, 0, sizeof(textures));
+    }
+
     inline TargetSet::TargetSet()
     {
     }
 
     inline TargetSet::~TargetSet()
     {
+        for (unsigned i=0; i<_textureCount; i++)
+        {
+            (RefPtr<Texture>&)_config.textures[i] = nullptr;    // todo
+        }
+        (RefPtr<Texture>&)_config.zbuffer = nullptr;    // todo
     }
 
     inline const TargetSet::Config& TargetSet::getConfig() const

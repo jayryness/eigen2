@@ -26,7 +26,7 @@ namespace eigen
     protected:
 
                             Display() {}
-        virtual            ~Display() {}
+        virtual            ~Display();
 
         TexturePtr         _target;
         Display*           _next    = nullptr;
@@ -37,6 +37,10 @@ namespace eigen
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////
+
+    inline Display::~Display()
+    {
+    }
 
     inline Texture* Display::getTarget() const
     {

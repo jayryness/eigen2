@@ -22,10 +22,10 @@ namespace eigen
     {
         assert(_frameNumber > 0);
         // todo - stop the world
-        _displayManager.cleanup();
-        _textureManager.cleanup();
-        _targetSetManager.cleanup();
         _pipelineManager.cleanup();
+        _displayManager.cleanup();
+        _targetSetManager.cleanup();
+        _textureManager.cleanup();
         Allocation::FreeMemory(_scratchMem);
         platformCleanup();
         _frameNumber = 0;
