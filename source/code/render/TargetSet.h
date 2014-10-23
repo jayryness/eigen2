@@ -70,9 +70,9 @@ namespace eigen
     {
         for (unsigned i=0; i<_textureCount; i++)
         {
-            (RefPtr<Texture>&)_config.textures[i] = nullptr;    // todo
+            ReleaseRef(_config.textures[i]);
         }
-        (RefPtr<Texture>&)_config.zbuffer = nullptr;    // todo
+        ReleaseRef(_config.zbuffer);
     }
 
     inline const TargetSet::Config& TargetSet::getConfig() const

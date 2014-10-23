@@ -55,7 +55,7 @@ namespace eigen
             (RefPtr<T>&)dest = src;
         }
 
-        friend void AddRef(T*& ptr)
+        friend void AddRef(T* ptr)
         {
             if (ptr)
             {
@@ -63,7 +63,7 @@ namespace eigen
             }
         }
 
-        friend void ReleaseRef(T*& ptr)
+        friend void ReleaseRef(T* ptr)
         {
             if (ptr)
             {

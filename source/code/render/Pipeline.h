@@ -223,9 +223,7 @@ namespace eigen
             return;
         }
 
-        // ugh todo
-        TargetSet* addRef = nullptr;
-        (RefPtr<TargetSet>&)addRef = last->targets;
+        AddRef(last->targets);
 
         _stages[_count] = last;
         _count++;

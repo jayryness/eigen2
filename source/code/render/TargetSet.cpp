@@ -31,12 +31,10 @@ namespace eigen
 
             for (unsigned i = 0; i < _textureCount; i++)
             {
-                TargetSet* addRef = nullptr;
-                (RefPtr<Texture>&)addRef = _config.textures[i]; // todo this blows
+                AddRef(_config.textures[i]);
             }
 
-            TargetSet* addRef = nullptr;
-            (RefPtr<Texture>&)addRef = _config.zbuffer; // todo this blows
+            AddRef(_config.zbuffer);
         }
         return err;
     }
