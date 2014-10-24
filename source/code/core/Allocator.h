@@ -52,7 +52,7 @@ namespace eigen
     // Mallocator
     //
 
-    class Mallocator : public Allocator
+    class Mallocator      : public Allocator
     {
     public:
         static Mallocator*  Get();

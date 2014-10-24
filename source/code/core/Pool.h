@@ -36,9 +36,6 @@ namespace eigen
 
         typedef void    (*BlockHandler)(Block**, Block*);
 
-        void            addBlock();
-        void            destroyBlock(Block* block);
-
         Block*         _block           = nullptr;
         BlockHandler   _blockHandler    = nullptr;
     };

@@ -151,11 +151,14 @@ namespace eigen
     class Composer
     {
     public:
-                                Composer(Allocator* allocator, unsigned initialStageCapacity);
+                                Composer(Renderer& renderer, unsigned initialStageCapacity);
                                ~Composer();
 
         void                    reset();
-        void                    addStage(const Stage& stage);
+
+        ClearStage&             addClear(TargetSet* targets);
+        BatchStage&             addBatchStage(TargetSet* targets);
+        FilterStage&            addFilter(TargetSet* targets);
 
         void                    saveToPipeline(Pipeline* pipeline);
         PipelinePtr             createPipeline(Renderer& renderer);
@@ -167,6 +170,7 @@ namespace eigen
 
         void                    reserve(unsigned count);
 
+        Renderer&              _renderer;
         Stage**                _stages = 0;
         unsigned               _count = 0;
         unsigned               _capacity = 0;
@@ -182,7 +186,8 @@ namespace eigen
         PipelinePtr             create();
 
     protected:
-                                friend class Pipeline;
+                                friend class Composer;
+                                friend class Pipeline; // todo
 
         struct Pipeline_      : public Pipeline { ~Pipeline_() {} friend class PipelineManager; };  // ugh todo
 
