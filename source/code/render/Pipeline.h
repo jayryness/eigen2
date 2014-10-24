@@ -143,6 +143,36 @@ namespace eigen
 
     typedef RefPtr<Pipeline>    PipelinePtr;
 
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Composer
+    //
+
+    class Composer
+    {
+    public:
+                                Composer(Allocator* allocator, unsigned initialStageCapacity);
+                               ~Composer();
+
+        void                    reset();
+        void                    addStage(const Stage& stage);
+
+        void                    saveToPipeline(Pipeline* pipeline);
+        PipelinePtr             createPipeline(Renderer& renderer);
+
+        unsigned                getStageCount() const;
+        const Stage&            getStage(unsigned index) const;
+
+    protected:
+
+        void                    reserve(unsigned count);
+
+        Stage**                _stages = 0;
+        unsigned               _count = 0;
+        unsigned               _capacity = 0;
+    };
+
+
     class PipelineManager     : public Manager<Pipeline>
     {
     public:
@@ -160,6 +190,7 @@ namespace eigen
         Pool                   _batchStagePool;
         Pool                   _filterStagePool;
     };
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
