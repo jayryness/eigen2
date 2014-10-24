@@ -24,7 +24,7 @@ namespace eigen
                                 struct PlatformDetails;
         struct Config
         {
-            Allocator*          allocator       = Mallocator::get();
+            Allocator*          allocator       = Mallocator::Get();
             bool                debugEnabled    = false;
             unsigned            scratchSize     = 16*1024*1024;
             PlatformConfig*     platformConfig  = nullptr;

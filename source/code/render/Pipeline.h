@@ -122,7 +122,7 @@ namespace eigen
         void                    addStage(const Stage& stage);
 
         unsigned                getStageCount() const;
-        Stage*                  getStage(unsigned index) const;
+        const Stage&            getStage(unsigned index) const;
 
         // refcounted guts with copy-on-write? (not just for api convenience, also for preventing pipeline mods during worklist population)
         //PipelinePtr           clone() const;
@@ -234,10 +234,10 @@ namespace eigen
         return _count;
     }
 
-    inline Stage* Pipeline::getStage(unsigned index) const
+    inline const Stage& Pipeline::getStage(unsigned index) const
     {
         assert(index < _count);
-        return _stages[index];
+        return *_stages[index];
     }
 
     inline PipelinePtr PipelineManager::create()

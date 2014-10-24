@@ -71,6 +71,11 @@ namespace eigen
             }
         }
 
+        bool isLastRef() const
+        {
+            return ptr->_refCount.load(std::memory_order_relaxed) == 1;
+        }
+
     protected:
 
         RefCounted()

@@ -14,10 +14,10 @@ namespace eigen
     class Allocator
     {
     protected:
-        virtual void* allocate(unsigned bytes) = 0;
-        virtual void  free(void* ptr) = 0;
+        virtual void*       allocate(unsigned bytes) = 0;
+        virtual void        free(void* ptr) = 0;
 
-        friend class Allocation;
+                            friend class Allocation;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -31,9 +31,9 @@ namespace eigen
                             template<class T>
         static T*           AllocateMemory(Allocator* allocator, int arrayLength=1);
         static void         FreeMemory(void*);
-        static Allocation*  From(void*);
                             template<class T>
         static Allocation*  Create(Allocator* allocator, int arrayLength=1);
+        static Allocation*  From(void*);
 
         void                destroy();
 
@@ -55,34 +55,15 @@ namespace eigen
     class Mallocator : public Allocator
     {
     public:
-        static Mallocator* get() throw()
-        {
-            static Mallocator s_mallocator;
-            return &s_mallocator;
-        }
+        static Mallocator*  Get();
 
-        ~Mallocator()
-        {
-            assert(getCount() == 0);
-        }
+                           ~Mallocator();
 
-        unsigned getCount() const
-        {
-            return _count.load(std::memory_order_relaxed);
-        }
+        unsigned            getCount() const;
 
     protected:
-        virtual void* allocate(unsigned bytes)
-        {
-            _count.fetch_add(+1, std::memory_order_relaxed);
-            return ::malloc(bytes);
-        }
-
-        virtual void free(void* ptr)
-        {
-            _count.fetch_add(-1, std::memory_order_relaxed);
-            ::free(ptr);
-        }
+        void*               allocate(unsigned bytes) override;
+        void                free(void* ptr) override;
 
         std::atomic<unsigned>  _count = 0;
     };
@@ -140,6 +121,34 @@ namespace eigen
     {
         Allocation* allocation = Allocation::Create<T>(allocator, arrayLength);
         return (T*)allocation->getMemory();
+    }
+
+    inline Mallocator* Mallocator::Get() throw()
+    {
+        static Mallocator s_mallocator;
+        return &s_mallocator;
+    }
+
+    inline Mallocator::~Mallocator()
+    {
+        assert(getCount() == 0);
+    }
+
+    inline unsigned Mallocator::getCount() const
+    {
+        return _count.load(std::memory_order_relaxed);
+    }
+
+    inline void* Mallocator::allocate(unsigned bytes)
+    {
+        _count.fetch_add(+1, std::memory_order_relaxed);
+        return ::malloc(bytes);
+    }
+
+    inline void Mallocator::free(void* ptr)
+    {
+        _count.fetch_add(-1, std::memory_order_relaxed);
+        ::free(ptr);
     }
 
 }

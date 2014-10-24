@@ -170,16 +170,6 @@ void Demo::run()
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
         pipeline.ptr->addStage(clearStage);
 
-        //{
-        //    Eigen::TagManager tm;
-        //    const Eigen::Tag* tag = tm.GetTag("One");
-        //    tm.GetTag("One");
-        //    tm.GetTag("Two");
-        //    tm.GetTag("Three");
-        //    tm.GetTag("Four");
-        //    tm.GetTag("One");
-        //}
-
         //Eigen::TextureSystem& textureSystem = system.GetTextureSystem();
         //eigen::TextureTargetPtr::Config targetCfg;
         //targetCfg.setWidth(clientRect.right - clientRect.left);
@@ -243,7 +233,7 @@ int main(int argc, const char** argv)
 
     printf("Cleaning up.\n\n");
 
-    eigen::Mallocator* mallocator = eigen::Mallocator::get();
+    eigen::Mallocator* mallocator = eigen::Mallocator::Get();
     if (mallocator->getCount())
     {
         printf("---------------------------------------------\n");
