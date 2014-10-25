@@ -12,6 +12,7 @@
     <ClInclude Include="Key.h" />
     <ClInclude Include="hash.h" />
     <ClInclude Include="math.h" />
+    <ClInclude Include="PodArray.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Error.cpp" />
