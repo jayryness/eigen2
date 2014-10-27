@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/RefCounted.h"
-#include "core/Pool.h"
+#include "core/PodDeque.h"
 #include "core/Allocator.h"
 #include "core/Error.h"
 #include "Worklist.h"
@@ -50,8 +50,23 @@ namespace eigen
 
     protected:
 
+        friend void             DestroyRefCounted(Display*);
+        friend void             DestroyRefCounted(Texture*);
+        friend void             DestroyRefCounted(TargetSet*);
+        friend void             DestroyRefCounted(Pipeline*);
+
+        struct DeadMeat
+        {
+            void*               object;
+            DeleteFunc          deleteFunc;
+            unsigned            frameNumber;
+        };
+
         Error                   platformInit(const Config& config);
         void                    platformCleanup();
+
+                                template<class T>
+        void                    scheduleDeletion(T* obj, unsigned delay);
 
         enum {                  MaxWorklists = 8 };
 
@@ -59,9 +74,11 @@ namespace eigen
 
         Manager<Display>       _displayManager;
         Manager<Texture>       _textureManager;
-        Manager<TargetSet>     _targetSetManager;
+        BlockAllocator         _targetSetAllocator;
+        //Manager<TargetSet>     _targetSetManager;
         PipelineManager        _pipelineManager;
         Keysmith<RenderPort>   _portManager;
+        PodDeque<DeadMeat>     _deadMeat;
 
         int8_t*                _scratchMem      = 0;
 
@@ -84,7 +101,8 @@ namespace eigen
 
         static Renderer&        From(const Manager<Display>* manager);
         static Renderer&        From(const Manager<Texture>* manager);
-        static Renderer&        From(const Manager<TargetSet>* manager);
+        //static Renderer&        From(const Manager<TargetSet>* manager);
+        static Renderer&        From(const PipelineManager* manager);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,6 +132,15 @@ namespace eigen
         return p;
     }
 
+    template<class T> void Renderer::scheduleDeletion(T* obj, unsigned delay)
+    {
+        assert(delay > 0);
+        Renderer::DeadMeat& deadMeat = _deadMeat.addLast();
+        deadMeat.object = obj;
+        deadMeat.deleteFunc = (DeleteFunc)Delete<T>;
+        deadMeat.frameNumber = _frameNumber + delay;
+    }
+
     inline Renderer& Renderer::From(const Manager<Display>* manager)
     {
         assert(manager);
@@ -128,10 +155,17 @@ namespace eigen
         return *renderer;
     }
 
-    inline Renderer& Renderer::From(const Manager<TargetSet>* manager)
+    //inline Renderer& Renderer::From(const Manager<TargetSet>* manager)
+    //{
+    //    assert(manager);
+    //    Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _targetSetManager));
+    //    return *renderer;
+    //}
+
+    inline Renderer& Renderer::From(const PipelineManager* manager)
     {
         assert(manager);
-        Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _targetSetManager));
+        Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _pipelineManager));
         return *renderer;
     }
 

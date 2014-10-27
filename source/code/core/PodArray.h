@@ -20,22 +20,27 @@ namespace eigen
                        ~PodArray();
 
                         template<typename T_INDEX>
-        T&              at(T_INDEX index);
+        T&              at(T_INDEX);
 
                         template<typename T_INDEX>
-        const T&        at(T_INDEX index) const;
+        const T&        at(T_INDEX) const;
 
-        T&              append();
+                        template<typename T_INDEX>
+        void            remove(T_INDEX);    // swaps last into this slot
+
+        T&              addLast();
+        void            removeLast();
 
         void            setCount(unsigned count);
         unsigned        getCount();
 
-        void            reserve(unsigned capacity);
+        void            reserve(unsigned capacity, bool exact=true);
 
     private:
 
         T*             _elements    = nullptr;
         unsigned       _count       = 0;
+        unsigned       _capacity    = 0;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +49,7 @@ namespace eigen
     template<typename T> PodArray<T>::PodArray(Allocator* allocator, unsigned initialCapacity)
     {
         _elements = Allocation::AllocateMemory<T>(initialCapacity);
+        _capacity = initialCapacity;
     }
 
     template<typename T> PodArray<T>::~PodArray()
@@ -53,25 +59,35 @@ namespace eigen
 
     template<typename T> template<typename T_INDEX> T& PodArray<T>::at(T_INDEX index)
     {
-        assert(index < _count);
+        assert((unsigned)index < _count);
         return _elements[index];
     }
 
     template<typename T> template<typename T_INDEX> const T& PodArray<T>::at(T_INDEX index) const
     {
-        assert(index < _count);
+        assert((unsigned)index < _count);
         return _elements[index];
     }
 
-    template<typename T> T& PodArray<T>::append()
+    template<typename T> template<typename T_INDEX> void PodArray<T>::remove(T_INDEX index)
     {
-        reserve(_count+1);
+        assert((unsigned)index < _count);
+        _count--;
+        if (index != _count)
+        {
+            _elements[index] = _elements[_count];
+        }
+    }
+
+    template<typename T> T& PodArray<T>::addLast()
+    {
+        reserve(_count+1, false);
         return _elements[_count++];
     }
 
     template<typename T> void PodArray<T>::setCount(unsigned count)
     {
-        reserve(count);
+        reserve(count, true);
 
         _count = count;
     }
@@ -81,17 +97,19 @@ namespace eigen
         return _count;
     }
 
-    template<typename T> void PodArray<T>::reserve(unsigned capacity)
+    template<typename T> void PodArray<T>::reserve(unsigned capacity, bool exact)
     {
-        Allocation* allocation = Allocation::From(_elements);
-        unsigned curCapacity = allocation->getArrayLength();
-
-        if (capacity > curCapacity)
+        if (capacity > _capacity)
         {
+            if (!exact)
+            {
+                capacity = std::max(capacity, _capacity*2);
+            }
             T* elements = Allocation::AllocateMemory<T>(capacity);
-            memmove(elements, _elements, _count);
-            allocation->destroy();
+            memcpy(elements, _elements, _count);
+            Allocation::FreeMemory(_elements);
             _elements = elements;
+            _capacity = capacity;
         }
     }
 

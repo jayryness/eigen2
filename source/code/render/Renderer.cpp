@@ -9,10 +9,11 @@ namespace eigen
         _frameNumber = 1;
         _config = config;
 
-        _scratchMem = Allocation::AllocateMemory<int8_t>(config.allocator, config.scratchSize);
+        _scratchMem = AllocateMemory<int8_t>(config.allocator, config.scratchSize);
         _scratchAllocPtr = _scratchMem;
         _scratchAllocEnd = _scratchMem + config.scratchSize/2;
 
+        _deadMeat.initialize(config.allocator, 64);
         _portManager.initialize(config.allocator, 2048);
         _pipelineManager.initialize(config.allocator, 8);
         return platformInit(config);    // see e.g. RendererDx11.cpp
@@ -22,11 +23,18 @@ namespace eigen
     {
         assert(_frameNumber > 0);
         // todo - stop the world
-        _pipelineManager.cleanup();
+
+        while (_deadMeat.getCount())
+        {
+            DeadMeat& meat = _deadMeat.at(0);
+            meat.deleteFunc(meat.object);
+            _deadMeat.removeFirst();
+        }
+
         _displayManager.cleanup();
-        _targetSetManager.cleanup();
+        //_targetSetManager.cleanup();
         _textureManager.cleanup();
-        Allocation::FreeMemory(_scratchMem);
+        FreeMemory(_scratchMem);
         platformCleanup();
         _frameNumber = 0;
     }
@@ -46,7 +54,8 @@ namespace eigen
 
     void DestroyRefCounted(Pipeline* pipeline)
     {
-        pipeline->getManager()->discard(pipeline);
+        Renderer& renderer = Renderer::From(pipeline->getManager());
+        renderer.scheduleDeletion(pipeline, 1);
     }
 
     Worklist* Renderer::openWorklist(const Pipeline* pipeline)
@@ -95,10 +104,18 @@ namespace eigen
             _scratchAllocEnd -= _config.scratchSize/2;
         }
 
-        _displayManager.destroyGarbage();
-        _textureManager.destroyGarbage();
-        _targetSetManager.destroyGarbage();
-        _pipelineManager.destroyGarbage();
+        //_displayManager.destroyGarbage();
+        //_textureManager.destroyGarbage();
+        //_targetSetManager.destroyGarbage();
+
+        // Perform delayed destruction on resources
+
+        while (_deadMeat.getCount() && _deadMeat.at(0).frameNumber == _frameNumber)
+        {
+            DeadMeat& meat = _deadMeat.at(0);
+            meat.deleteFunc(meat.object);
+            _deadMeat.removeFirst();
+        }
 
         _worklistCount = 0;
         _frameNumber++;

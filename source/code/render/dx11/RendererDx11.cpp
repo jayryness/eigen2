@@ -12,7 +12,7 @@ namespace eigen
 
         _displayManager.initialize<DisplayDx11>(config.allocator, 8);
         _textureManager.initialize<TextureDx11>(config.allocator, 128);
-        _targetSetManager.initialize<TargetSetDx11>(config.allocator, 16);
+        _targetSetAllocator.initialize(config.allocator, sizeof(TargetSetDx11), 16);
 
         PlatformDetails& plat = getPlatformDetails();
         new (&plat) PlatformDetails();
@@ -77,23 +77,27 @@ namespace eigen
 
     TargetSetPtr Renderer::createTargetSet()
     {
-        TargetSetDx11* targetSet = _targetSetManager.create<TargetSetDx11>();
+        //TargetSetDx11* targetSet = _targetSetManager.create<TargetSetDx11>();
+        TargetSetDx11* targetSet = new(AllocateMemory<TargetSetDx11>(&_targetSetAllocator, 1)) TargetSetDx11(*this);
         return targetSet;
     }
 
     void DestroyRefCounted(Display* display)
     {
-        display->getManager()->discard(display);
+        Renderer& renderer = Renderer::From(display->getManager());
+        renderer.scheduleDeletion((DisplayDx11*)display, 1);
     }
 
     void DestroyRefCounted(Texture* texture)
     {
-        texture->getManager()->discard(texture);
+        Renderer& renderer = Renderer::From(texture->getManager());
+        renderer.scheduleDeletion((TextureDx11*)texture, 1);
     }
 
     void DestroyRefCounted(TargetSet* targetSet)
     {
-        targetSet->getManager()->discard(targetSet);
+        Renderer& renderer = ((TargetSetDx11*)targetSet)->_renderer;
+        renderer.scheduleDeletion((TargetSetDx11*)targetSet, 1);
     }
 
 

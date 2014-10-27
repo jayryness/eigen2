@@ -112,9 +112,10 @@ namespace eigen
     // Pipeline
     //
 
-    class Pipeline            : public Managed<Pipeline>
+    class Pipeline :            public RefCounted<Pipeline>
     {
     public:
+                                friend class PipelineManager;
 
         void                    initialize(unsigned initialStageCapacity);
 
@@ -124,21 +125,22 @@ namespace eigen
         unsigned                getStageCount() const;
         const Stage&            getStage(unsigned index) const;
 
-        // refcounted guts with copy-on-write? (not just for api convenience, also for preventing pipeline mods during worklist population)
-        //PipelinePtr           clone() const;
+        PipelineManager*        getManager() const;
 
     protected:
+                                friend void Delete<Pipeline>(Pipeline*);
                                 friend class Worklist;
 
                                 Pipeline();
-                               ~Pipeline();
-        void                    reserve(unsigned count);
-        void                    unshare();
+                                ~Pipeline();
 
-        RenderPort::Set        _portSet;
-        Stage**                _stages      = 0;
-        unsigned               _count       = 0;
-        unsigned               _capacity    = 0;
+        void                    reserve(unsigned count);
+
+        PipelineManager*        _manager    = 0;
+        RenderPort::Set         _portSet;   
+        Stage**                 _stages     = 0;
+        unsigned                _count      = 0;
+        unsigned                _capacity   = 0;
     };
 
     typedef RefPtr<Pipeline>    PipelinePtr;
@@ -152,7 +154,7 @@ namespace eigen
     {
     public:
                                 Composer(Renderer& renderer, unsigned initialStageCapacity);
-                               ~Composer();
+                                ~Composer();
 
         void                    reset();
 
@@ -176,8 +178,12 @@ namespace eigen
         unsigned               _capacity = 0;
     };
 
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // PipelineManager
+    //
 
-    class PipelineManager     : public Manager<Pipeline>
+    class PipelineManager
     {
     public:
 
@@ -189,11 +195,11 @@ namespace eigen
                                 friend class Composer;
                                 friend class Pipeline; // todo
 
-        struct Pipeline_      : public Pipeline { ~Pipeline_() {} friend class PipelineManager; };  // ugh todo
-
-        Pool                   _clearStagePool;
-        Pool                   _batchStagePool;
-        Pool                   _filterStagePool;
+        Allocator*              _allocator = 0;
+        BlockAllocator          _pipelineAllocator;
+        BlockAllocator          _clearStageAllocator;
+        BlockAllocator          _batchStageAllocator;
+        BlockAllocator          _filterStageAllocator;
     };
 
 
@@ -221,11 +227,10 @@ namespace eigen
     {
         if (_count + count > _capacity)
         {
-            Allocator* allocator = getManager()->getAllocator();
             _capacity += _count + count;
-            Stage** stages = Allocation::AllocateMemory<Stage*>(allocator, _capacity);
+            Stage** stages = AllocateMemory<Stage*>(_manager->_allocator, _capacity);
             memcpy(stages, _stages, _count * sizeof(*stages));
-            Allocation::FreeMemory(_stages);
+            FreeMemory(_stages);
         }
     }
 
@@ -238,21 +243,20 @@ namespace eigen
         }
 
         Stage* last = nullptr;
-        PipelineManager* manager = (PipelineManager*)getManager();
 
         reserve(1);
 
         switch (stage.type)
         {
         case Stage::Type::Clear:
-            last = (Stage*)new(manager->_clearStagePool.allocate()) ClearStage((ClearStage&)stage);
+            last = new(AllocateMemory<ClearStage>(&_manager->_clearStageAllocator, 1)) ClearStage((ClearStage&)stage);
             break;
         case Stage::Type::Batch:
-            last = (Stage*)new(manager->_batchStagePool.allocate()) BatchStage((BatchStage&)stage);
+            last = new(AllocateMemory<BatchStage>(&_manager->_batchStageAllocator, 1)) BatchStage((BatchStage&)stage);
             _portSet |= ((BatchStage&)stage).renderPort->getBit();
             break;
         case Stage::Type::Filter:
-            last = (Stage*)new(manager->_filterStagePool.allocate()) FilterStage((FilterStage&)stage);
+            last = new(AllocateMemory<FilterStage>(&_manager->_filterStageAllocator, 1)) FilterStage((FilterStage&)stage);
             break;
         default:
             assert(false);
@@ -276,9 +280,16 @@ namespace eigen
         return *_stages[index];
     }
 
+    inline PipelineManager* Pipeline::getManager() const
+    {
+        return _manager;
+    }
+
     inline PipelinePtr PipelineManager::create()
     {
-        return Manager<Pipeline>::create<Pipeline_>();
+        Pipeline* pipeline = new(AllocateMemory<Pipeline>(&_pipelineAllocator, 1)) Pipeline();
+        pipeline->_manager = this;
+        return pipeline;
     }
 
 }

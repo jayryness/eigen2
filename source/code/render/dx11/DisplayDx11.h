@@ -6,13 +6,17 @@
 namespace eigen
 {
 
-    class DisplayDx11         : public Display
+    class DisplayDx11 :         public Display
     {
     public:
                                 DisplayDx11() {}
-        virtual                ~DisplayDx11() {}
+                                ~DisplayDx11();
 
-        ComPtr<IDXGISwapChain> _swapChain;
+        ComPtr<IDXGISwapChain>  _swapChain;
     };
+
+    inline DisplayDx11::~DisplayDx11()
+    {
+    }
 
 }

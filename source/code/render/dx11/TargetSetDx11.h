@@ -5,19 +5,23 @@
 
 namespace eigen
 {
+    class RendererDx11;
 
-    class TargetSetDx11               : public TargetSet
+    class TargetSetDx11 :               public TargetSet
     {
     public:
-                                        TargetSetDx11();
-                                       ~TargetSetDx11();
+                                        TargetSetDx11(Renderer& renderer);
+                                        ~TargetSetDx11();
 
-        ComPtr<ID3D11RenderTargetView> _targetViews[MaxTextures];
-        ComPtr<ID3D11DepthStencilView> _depthStencilView;
-        ComPtr<ID3D11DepthStencilView> _readOnlyDepthStencilView;
+        Renderer&                       _renderer;
+
+        ComPtr<ID3D11RenderTargetView>  _targetViews[MaxTextures];
+        ComPtr<ID3D11DepthStencilView>  _depthStencilView;
+        ComPtr<ID3D11DepthStencilView>  _readOnlyDepthStencilView;
     };
 
-    inline TargetSetDx11::TargetSetDx11()
+    inline TargetSetDx11::TargetSetDx11(Renderer& renderer)
+        : _renderer(renderer)
     {
     }
 

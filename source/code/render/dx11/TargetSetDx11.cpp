@@ -94,7 +94,7 @@ namespace eigen
 
     Error TargetSet::platformInit(const Config& config)
     {
-        Renderer& renderer = Renderer::From(_manager);
+        Renderer& renderer = ((TargetSetDx11*)this)->_renderer;
         ID3D11Device* device = renderer.getPlatformDetails().device.Get();
         auto plat = (TargetSetDx11*)this;
 

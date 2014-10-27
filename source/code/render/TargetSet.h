@@ -12,14 +12,14 @@ namespace eigen
     // TargetSet
     //
 
-    class TargetSet       : public Managed<TargetSet>
+    class TargetSet :               public RefCounted<TargetSet>
     {
     public:
 
         enum
         {
-            MaxTextures = 8,
-            MaxBuffers  = 8
+            MaxTextures             = 8,
+            MaxBuffers              = 8
         };
 
         struct Config
@@ -33,22 +33,22 @@ namespace eigen
             Texture::Slice          zbufferSlice;
         };
 
-        Error               initialize(const Config& config);
-        void                detach();   // Release GPU resources early
+        Error                       initialize(const Config& config);
+        void                        detach();   // Release GPU resources early
 
-        const Config&       getConfig() const;
-        unsigned            getTextureCount() const;
+        const Config&               getConfig() const;
+        unsigned                    getTextureCount() const;
 
     protected:
 
-                            TargetSet();
-                           ~TargetSet();
+                                    TargetSet();
+                                    ~TargetSet();
 
-        Error               platformInit(const Config& config);
-        void                platformDetach();
+        Error                       platformInit(const Config& config);
+        void                        platformDetach();
 
-        Config             _config;
-        unsigned           _textureCount = 0;
+        Config                      _config;
+        unsigned                    _textureCount = 0;
 
     };
 

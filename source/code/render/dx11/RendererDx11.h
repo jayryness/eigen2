@@ -3,7 +3,6 @@
 #include "../Renderer.h"
 #include "DisplayDx11.h"
 #include "commonDx11.h"
-#include "core/Pool.h"
 #include <type_traits>
 
 namespace eigen

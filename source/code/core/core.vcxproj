@@ -20,11 +20,12 @@
     <ClInclude Include="Key.h" />
     <ClInclude Include="Managed.h" />
     <ClInclude Include="math.h" />
-    <ClInclude Include="Pool.h" />
+    <ClInclude Include="PodDeque.h" />
     <ClInclude Include="RefCounted.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Allocator.cpp" />
     <ClCompile Include="Error.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

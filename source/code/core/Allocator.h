@@ -2,6 +2,7 @@
 
 #include <new>
 #include <atomic>
+#include <cassert>
 
 namespace eigen
 {
@@ -13,38 +14,73 @@ namespace eigen
 
     class Allocator
     {
-    protected:
+    public:
+
         virtual void*       allocate(unsigned bytes) = 0;
         virtual void        free(void* ptr) = 0;
-
-                            friend class Allocation;
     };
+
+    template<class T> T*    AllocateMemory(Allocator* allocator, unsigned arrayLength);
+    template<class T> T*    AllocateMemory(Allocator* allocator, unsigned arrayLength, void* metadata);
+    void                    FreeMemory(void*);
+    template<class T> void  Delete(T* obj);
+
+    typedef void            (*DeleteFunc)(void* obj);
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
     // Allocation
     //
 
-    class Allocation
+    struct Allocation
     {
-    public:
-                            template<class T>
-        static T*           AllocateMemory(Allocator* allocator, int arrayLength=1);
-        static void         FreeMemory(void*);
-                            template<class T>
-        static Allocation*  Create(Allocator* allocator, int arrayLength=1);
         static Allocation*  From(void*);
 
         void                destroy();
-
-        int                 getArrayLength() const;
-        Allocator*          getAllocator() const;
         void*               getMemory() const;
+
+        void*              _metadata;
+        Allocator*         _allocator;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // BlockAllocator
+    //
+
+    class BlockAllocator  : public Allocator
+    {
+    public:
+                           ~BlockAllocator();
+
+        void                initialize(Allocator* backing, unsigned allocationSize, unsigned initialReservations);
+
+        void*               allocate(unsigned ignored)  final;
+        void                free(void* ptr)             final;
+
+        Allocator*          getBacking() const;
 
     private:
 
-        int32_t             _arrayLength;
-        Allocator*          _allocator;
+        struct Block
+        {
+            Block*          next;
+            Allocation*     free;
+            unsigned        capacity;
+            unsigned        count;
+
+            Allocator*      getAllocator();
+            unsigned        sumCapacity() const;
+        };
+        enum {              SizeOfBlock = (sizeof(Block)+0xf) & ~0xf };
+
+        Block*              createBlock(Allocator* backing, unsigned capacity);
+        void                addBlock();
+        void                removeBlock(Block*);
+
+        Block*             _head            = 0;
+        unsigned           _allocationSize  = 0;
+
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +101,7 @@ namespace eigen
         void*               allocate(unsigned bytes) override;
         void                free(void* ptr) override;
 
-        std::atomic<unsigned>  _count = 0;
+        std::atomic<unsigned> _count = 0;
     };
 
 
@@ -79,28 +115,9 @@ namespace eigen
         return allocation;
     }
 
-    template<class T> Allocation* Allocation::Create(Allocator* allocator, int arrayLength)
-    {
-        Allocation* allocation = (Allocation*)allocator->allocate(sizeof(Allocation) + sizeof(T)*arrayLength);
-
-        allocation->_arrayLength = arrayLength;
-        allocation->_allocator   = allocator;
-        return allocation;
-    }
-
     inline void Allocation::destroy()
     {
         _allocator->free(this);
-    }
-
-    inline int Allocation::getArrayLength() const
-    {
-        return _arrayLength;
-    }
-
-    inline Allocator* Allocation::getAllocator() const
-    {
-        return _allocator;
     }
 
     inline void* Allocation::getMemory() const
@@ -108,19 +125,42 @@ namespace eigen
         return (void*)(this+1);
     }
 
-    inline void Allocation::FreeMemory(void* memory)
+    template<class T> T* AllocateMemory(Allocator* allocator, unsigned arrayLength, void* metadata)
+    {
+        Allocation* allocation = (Allocation*)allocator->allocate(sizeof(Allocation) + sizeof(T)*arrayLength);
+
+        allocation->_metadata  = metadata;
+        allocation->_allocator = allocator;
+
+        return (T*)allocation->getMemory();
+    }
+
+    template<class T> T* AllocateMemory(Allocator* allocator, unsigned arrayLength)
+    {
+        Allocation* allocation = (Allocation*)allocator->allocate(sizeof(Allocation) + sizeof(T)*arrayLength);
+
+        allocation->_allocator = allocator;
+
+        return (T*)allocation->getMemory();
+    }
+
+    inline void FreeMemory(void* memory)
     {
         if (memory)
         {
-            Allocation* allocation = From(memory);
+            Allocation* allocation = Allocation::From(memory);
             allocation->destroy();
         }
     }
 
-    template<class T> inline T* Allocation::AllocateMemory(Allocator* allocator, int arrayLength)
+    template<class T> void Delete(T* object)
     {
-        Allocation* allocation = Allocation::Create<T>(allocator, arrayLength);
-        return (T*)allocation->getMemory();
+        if (object)
+        {
+            object->~T();
+            Allocation* allocation = Allocation::From(object);
+            allocation->destroy();
+        }
     }
 
     inline Mallocator* Mallocator::Get() throw()
@@ -149,6 +189,68 @@ namespace eigen
     {
         _count.fetch_add(-1, std::memory_order_relaxed);
         ::free(ptr);
+    }
+
+    inline Allocator* BlockAllocator::Block::getAllocator()
+    {
+        assert(this);
+        return Allocation::From(this)->_allocator;
+    }
+
+    inline BlockAllocator::~BlockAllocator()
+    {
+        while (_head)
+        {
+            removeBlock(_head);
+        }
+    }
+
+    inline void BlockAllocator::initialize(Allocator* backing, unsigned allocationSize, unsigned initialReservations)
+    {
+        assert(_head == nullptr);   // already initialized
+        _allocationSize = allocationSize;
+        _head = createBlock(backing, initialReservations);
+    }
+
+    inline Allocator* BlockAllocator::getBacking() const
+    {
+        assert(_head);  // must initialize() first
+        return _head->getAllocator();
+    }
+
+    inline void* BlockAllocator::allocate(unsigned bytes)
+    {
+        assert(_head);  // must initialize() first
+
+        Allocation* allocation = _head->free;
+
+        _head->count++;
+        _head->free = (Allocation*)allocation->_metadata;   // next free
+        allocation->_metadata = _head;                      // now metadata points back to block instead of next
+
+        if (_head->count == _head->capacity)
+        {
+            assert(_head->free->_metadata == nullptr);
+            addBlock();
+        }
+
+        return allocation;
+    }
+
+    inline void BlockAllocator::free(void* ptr)
+    {
+        Allocation* allocation = (Allocation*)ptr;
+        Block* block = (Block*)allocation->_metadata;
+
+        allocation->_metadata = block->free;
+        block->free = allocation;
+        block->count--;
+
+        // if the block is empty, and not the first block
+        if (block->count == 0 && block != _head)
+        {
+            removeBlock(block);
+        }
     }
 
 }

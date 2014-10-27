@@ -10,26 +10,24 @@ namespace eigen
     Pipeline::~Pipeline()
     {
         reset();
-        Allocation::FreeMemory(_stages);
+        FreeMemory(_stages);
     }
 
     void Pipeline::reset()
     {
-        PipelineManager* manager = (PipelineManager*)getManager();
-
         while (_count > 0)
         {
             Stage* last = _stages[--_count];
             switch (last->type)
             {
             case Stage::Type::Clear:
-                manager->_clearStagePool.destroy((ClearStage*)last);
+                Delete((ClearStage*)last);
                 break;
             case Stage::Type::Batch:
-                manager->_batchStagePool.destroy((BatchStage*)last);
+                Delete((BatchStage*)last);
                 break;
             case Stage::Type::Filter:
-                manager->_filterStagePool.destroy((FilterStage*)last);
+                Delete((FilterStage*)last);
                 break;
             }
             (RefPtr<TargetSet>&)last->targets = nullptr;
@@ -46,21 +44,23 @@ namespace eigen
         {
             if (_stages)
             {
-                Allocation::FreeMemory(_stages);
+                FreeMemory(_stages);
             }
-            Allocator* allocator = getManager()->getAllocator();
-            _stages = Allocation::AllocateMemory<Stage*>(allocator, initialStageCapacity);
+            _stages = AllocateMemory<Stage*>(_manager->_allocator, initialStageCapacity);
             _capacity = initialStageCapacity;
         }
     }
 
     void PipelineManager::initialize(Allocator* allocator, unsigned initialCapacity)
     {
-        Manager<Pipeline>::initialize<Pipeline_>(allocator, initialCapacity);
+        assert(_allocator == nullptr);  // already initialized
+        _allocator = allocator;
 
-        _clearStagePool.initialize<ClearStage>(allocator, 16);
-        _batchStagePool.initialize<BatchStage>(allocator, 64);
-        _filterStagePool.initialize<FilterStage>(allocator, 32);
+        _pipelineAllocator.initialize(allocator, sizeof(Pipeline), initialCapacity);
+
+        _clearStageAllocator.initialize(allocator, sizeof(ClearStage), 16);
+        _batchStageAllocator.initialize(allocator, sizeof(BatchStage), 64);
+        _filterStageAllocator.initialize(allocator, sizeof(FilterStage), 32);
     }
 
 }

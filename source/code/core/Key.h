@@ -100,13 +100,13 @@ namespace eigen
 
     template<class T> Keysmith<T>::~Keysmith()
     {
-        Allocation::FreeMemory(_strings);
+        FreeMemory(_strings);
     }
 
     template<class T> void Keysmith<T>::initialize(Allocator* allocator, unsigned initialStringsCapacity)
     {
         assert(_strings == nullptr);
-        _strings = Allocation::AllocateMemory<char>(allocator, initialStringsCapacity);
+        _strings = AllocateMemory<char>(allocator, initialStringsCapacity);
         _stringsEnd = 0;
         _stringsCapacity = initialStringsCapacity;
     }
@@ -151,9 +151,9 @@ namespace eigen
         {
             _stringsCapacity = (_stringsEnd + nameLength + 1) * 2;
             Allocation* allocation = Allocation::From(_strings);
-            char* strings = Allocation::AllocateMemory<char>(allocation->getAllocator(), _stringsCapacity);
+            char* strings = AllocateMemory<char>(allocation->_allocator, _stringsCapacity);
             memcpy(strings, _strings, _stringsEnd);
-            Allocation::FreeMemory(_strings);
+            FreeMemory(_strings);
             _strings = strings;
         }
         memcpy(_strings + _stringsEnd, name, nameLength + 1);

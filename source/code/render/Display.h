@@ -26,7 +26,7 @@ namespace eigen
     protected:
 
                             Display() {}
-        virtual            ~Display();
+                            ~Display();
 
         TexturePtr         _target;
         Display*           _next    = nullptr;
