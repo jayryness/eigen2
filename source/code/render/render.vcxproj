@@ -81,6 +81,7 @@
   <ItemGroup>
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="RenderPort.h" />
+    <ClInclude Include="Stage.h" />
     <ClInclude Include="Worklist.h" />
     <ClInclude Include="Display.h" />
     <ClInclude Include="dx11\commonDx11.h" />
