@@ -57,7 +57,6 @@ namespace eigen
         _allocator = allocator;
 
         _pipelineAllocator.initialize(allocator, sizeof(Pipeline), initialCapacity);
-
         _clearStageAllocator.initialize(allocator, sizeof(ClearStage), 16);
         _batchStageAllocator.initialize(allocator, sizeof(BatchStage), 64);
         _filterStageAllocator.initialize(allocator, sizeof(FilterStage), 32);

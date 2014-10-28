@@ -10,8 +10,8 @@ namespace eigen
     {
         static_assert(sizeof(PlatformDetails) <= sizeof(Renderer::_platformDetails), "Must increase size of Renderer::_platformDetails");
 
-        _displayManager.initialize<DisplayDx11>(config.allocator, 8);
-        _textureManager.initialize<TextureDx11>(config.allocator, 128);
+        _displayAllocator.initialize(config.allocator, sizeof(DisplayDx11), 8);
+        _textureAllocator.initialize(config.allocator, sizeof(TextureDx11), 64);
         _targetSetAllocator.initialize(config.allocator, sizeof(TargetSetDx11), 16);
 
         PlatformDetails& plat = getPlatformDetails();
@@ -65,32 +65,31 @@ namespace eigen
 
     DisplayPtr Renderer::createDisplay()
     {
-        DisplayDx11* display = _displayManager.create<DisplayDx11>();
+        DisplayDx11* display = new(AllocateMemory<DisplayDx11>(&_displayAllocator, 1)) DisplayDx11(*this);
         return display;
     }
 
     TexturePtr Renderer::createTexture()
     {
-        TextureDx11* texture = _textureManager.create<TextureDx11>();
+        TextureDx11* texture = new(AllocateMemory<TextureDx11>(&_textureAllocator, 1)) TextureDx11(*this);
         return texture;
     }
 
     TargetSetPtr Renderer::createTargetSet()
     {
-        //TargetSetDx11* targetSet = _targetSetManager.create<TargetSetDx11>();
         TargetSetDx11* targetSet = new(AllocateMemory<TargetSetDx11>(&_targetSetAllocator, 1)) TargetSetDx11(*this);
         return targetSet;
     }
 
     void DestroyRefCounted(Display* display)
     {
-        Renderer& renderer = Renderer::From(display->getManager());
+        Renderer& renderer = ((DisplayDx11*)display)->_renderer;
         renderer.scheduleDeletion((DisplayDx11*)display, 1);
     }
 
     void DestroyRefCounted(Texture* texture)
     {
-        Renderer& renderer = Renderer::From(texture->getManager());
+        Renderer& renderer = ((TextureDx11*)texture)->_renderer;
         renderer.scheduleDeletion((TextureDx11*)texture, 1);
     }
 

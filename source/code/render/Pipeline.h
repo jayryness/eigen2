@@ -2,7 +2,6 @@
 
 #include "TargetSet.h"
 #include "RenderPort.h"
-#include "core/Managed.h"
 #include "core/types.h"
 
 namespace eigen

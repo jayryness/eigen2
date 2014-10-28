@@ -13,7 +13,7 @@ namespace eigen
     // Display
     //
 
-    class Display         : public Managed<Display>
+    class Display         : public RefCounted<Display>
     {
     public:
 

@@ -59,8 +59,7 @@ namespace eigen
     {
         ComPtr<ID3D11Resource> d3dResource;
 
-        Renderer& renderer = Renderer::From(_manager);
-        Renderer::PlatformDetails& plat = renderer.getPlatformDetails();
+        Renderer::PlatformDetails& plat = ((TextureDx11*)this)->_renderer.getPlatformDetails();
         ID3D11Device* device = plat.device.Get();
 
         if (config.depth > 0)

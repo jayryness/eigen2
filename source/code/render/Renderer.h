@@ -70,27 +70,26 @@ namespace eigen
 
         enum {                  MaxWorklists = 8 };
 
-        Config                 _config;
+        Config                  _config;
 
-        Manager<Display>       _displayManager;
-        Manager<Texture>       _textureManager;
-        BlockAllocator         _targetSetAllocator;
-        //Manager<TargetSet>     _targetSetManager;
-        PipelineManager        _pipelineManager;
-        Keysmith<RenderPort>   _portManager;
-        PodDeque<DeadMeat>     _deadMeat;
+        BlockAllocator          _displayAllocator;
+        BlockAllocator          _textureAllocator;
+        BlockAllocator          _targetSetAllocator;
+        PipelineManager         _pipelineManager;
+        Keysmith<RenderPort>    _portManager;
+        PodDeque<DeadMeat>      _deadMeat;
 
-        int8_t*                _scratchMem      = 0;
+        int8_t*                 _scratchMem      = 0;
 
-        std::atomic<int8_t*>   _scratchAllocPtr = 0;
-        int8_t*                _scratchAllocEnd = 0;
+        std::atomic<int8_t*>    _scratchAllocPtr = 0;
+        int8_t*                 _scratchAllocEnd = 0;
 
-        Worklist               _worklists[MaxWorklists];
-        unsigned               _worklistCount   = 0;
+        Worklist                _worklists[MaxWorklists];
+        unsigned                _worklistCount   = 0;
 
-        unsigned               _frameNumber     = 0;
+        unsigned                _frameNumber     = 0;
 
-        void*                  _platformDetails[8];
+        void*                   _platformDetails[8];
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -99,9 +98,6 @@ namespace eigen
         PlatformDetails&        getPlatformDetails();
         int8_t*                 scratchAlloc(unsigned bytes);
 
-        static Renderer&        From(const Manager<Display>* manager);
-        static Renderer&        From(const Manager<Texture>* manager);
-        //static Renderer&        From(const Manager<TargetSet>* manager);
         static Renderer&        From(const PipelineManager* manager);
     };
 
@@ -140,27 +136,6 @@ namespace eigen
         deadMeat.deleteFunc = (DeleteFunc)Delete<T>;
         deadMeat.frameNumber = _frameNumber + delay;
     }
-
-    inline Renderer& Renderer::From(const Manager<Display>* manager)
-    {
-        assert(manager);
-        Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _displayManager));
-        return *renderer;
-    }
-
-    inline Renderer& Renderer::From(const Manager<Texture>* manager)
-    {
-        assert(manager);
-        Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _textureManager));
-        return *renderer;
-    }
-
-    //inline Renderer& Renderer::From(const Manager<TargetSet>* manager)
-    //{
-    //    assert(manager);
-    //    Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _targetSetManager));
-    //    return *renderer;
-    //}
 
     inline Renderer& Renderer::From(const PipelineManager* manager)
     {

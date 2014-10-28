@@ -24,7 +24,7 @@ namespace eigen
         desc.Windowed = true;
         desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-        Renderer& renderer = Renderer::From(_manager);
+        Renderer& renderer = ((DisplayDx11*)this)->_renderer;
 
         Renderer::PlatformDetails& plat = renderer.getPlatformDetails();
 

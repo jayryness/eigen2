@@ -31,9 +31,6 @@ namespace eigen
             _deadMeat.removeFirst();
         }
 
-        _displayManager.cleanup();
-        //_targetSetManager.cleanup();
-        _textureManager.cleanup();
         FreeMemory(_scratchMem);
         platformCleanup();
         _frameNumber = 0;
@@ -103,10 +100,6 @@ namespace eigen
             _scratchAllocPtr  = _scratchMem;
             _scratchAllocEnd -= _config.scratchSize/2;
         }
-
-        //_displayManager.destroyGarbage();
-        //_textureManager.destroyGarbage();
-        //_targetSetManager.destroyGarbage();
 
         // Perform delayed destruction on resources
 

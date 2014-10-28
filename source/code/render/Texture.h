@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Format.h"
-#include "core/Managed.h"
+#include "core/RefCounted.h"
 #include "core/Error.h"
 #include "core/EnumBits.h"
 
@@ -13,7 +13,7 @@ namespace eigen
     // Texture
     //
 
-    class Texture                   : public Managed<Texture>
+    class Texture                   : public RefCounted<Texture>
     {
     public:
 
