@@ -171,10 +171,10 @@ namespace eigen
 
         void                    reserve(unsigned count);
 
-        Renderer&              _renderer;
-        Stage**                _stages = 0;
-        unsigned               _count = 0;
-        unsigned               _capacity = 0;
+        PipelineManager&        _manager;
+        Stage**                 _stages = 0;
+        unsigned                _count = 0;
+        unsigned                _capacity = 0;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////

@@ -1,7 +1,7 @@
 #include "DisplayDx11.h"
 #include "RendererDx11.h"
 #include "TextureDx11.h"
-#include "core/Allocator.h"
+#include "core/memory.h"
 #include "core/Error.h"
 
 namespace eigen

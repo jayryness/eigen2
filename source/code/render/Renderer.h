@@ -2,7 +2,6 @@
 
 #include "core/RefCounted.h"
 #include "core/PodDeque.h"
-#include "core/Allocator.h"
 #include "core/Error.h"
 #include "Worklist.h"
 #include "Pipeline.h"
@@ -22,6 +21,9 @@ namespace eigen
     public:
                                 struct PlatformConfig;
                                 struct PlatformDetails;
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         struct Config
         {
             Allocator*          allocator       = Mallocator::Get();
@@ -47,6 +49,8 @@ namespace eigen
         TexturePtr              createTexture();
         TargetSetPtr            createTargetSet();
         PipelinePtr             createPipeline();
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     protected:
 
@@ -76,7 +80,7 @@ namespace eigen
         BlockAllocator          _textureAllocator;
         BlockAllocator          _targetSetAllocator;
         PipelineManager         _pipelineManager;
-        Keysmith<RenderPort>    _portManager;
+        Keysmith<RenderPort>    _portSmith;
         PodDeque<DeadMeat>      _deadMeat;
 
         int8_t*                 _scratchMem      = 0;
@@ -91,14 +95,11 @@ namespace eigen
 
         void*                   _platformDetails[8];
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public:
 
         PlatformDetails&        getPlatformDetails();
         int8_t*                 scratchAlloc(unsigned bytes);
 
-        static Renderer&        From(const PipelineManager* manager);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +111,7 @@ namespace eigen
 
     inline RenderPort* Renderer::getPort(const char* name) throw()
     {
-        return _portManager.issue(name);
+        return _portSmith.issue(name);
     }
 
     inline unsigned Renderer::getFrameNumber() const
@@ -135,13 +136,6 @@ namespace eigen
         deadMeat.object = obj;
         deadMeat.deleteFunc = (DeleteFunc)Delete<T>;
         deadMeat.frameNumber = _frameNumber + delay;
-    }
-
-    inline Renderer& Renderer::From(const PipelineManager* manager)
-    {
-        assert(manager);
-        Renderer* renderer = (Renderer*)((uint8_t*)manager - offsetof(Renderer, _pipelineManager));
-        return *renderer;
     }
 
 }

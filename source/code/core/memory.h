@@ -7,6 +7,11 @@
 namespace eigen
 {
 
+    template<class T_STRUCT, class T_MEMBER> T_STRUCT* StructFromMember(T_MEMBER T_STRUCT::*ptrToMember, T_MEMBER* member)
+    {
+        return (T_STRUCT*)((char*)member - offsetof(T_STRUCT, *ptrToMember));
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
     // Allocator

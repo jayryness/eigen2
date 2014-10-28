@@ -14,7 +14,7 @@ namespace eigen
         _scratchAllocEnd = _scratchMem + config.scratchSize/2;
 
         _deadMeat.initialize(config.allocator, 64);
-        _portManager.initialize(config.allocator, 2048);
+        _portSmith.initialize(config.allocator, 2048);
         _pipelineManager.initialize(config.allocator, 8);
         return platformInit(config);    // see e.g. RendererDx11.cpp
     }
@@ -51,7 +51,7 @@ namespace eigen
 
     void DestroyRefCounted(Pipeline* pipeline)
     {
-        Renderer& renderer = Renderer::From(pipeline->getManager());
+        Renderer& renderer = *StructFromMember(&Renderer::_pipelineManager, pipeline->getManager());
         renderer.scheduleDeletion(pipeline, 1);
     }
 
