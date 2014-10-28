@@ -47,6 +47,8 @@ namespace eigen
     //
     // Composer
     //
+    // Helper class for building pipelines
+    //
 
     class Composer
     {
