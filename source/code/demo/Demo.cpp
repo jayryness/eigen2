@@ -162,13 +162,18 @@ void Demo::run()
         renderer.getPort("Three");
         renderer.getPort("Four");
 
-        eigen::PipelinePtr pipeline = renderer.createPipeline();
-        pipeline.ptr->initialize(4);
-
-        eigen::ClearStage clearStage;
-        clearStage.targets = displayTargets.ptr;
+        eigen::Composer composer(renderer, 4);
+        eigen::ClearStage& clearStage = composer.addClear(displayTargets);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
-        pipeline.ptr->addStage(clearStage);
+        eigen::PipelinePtr pipeline = composer.createPipeline();
+
+        //eigen::PipelinePtr pipeline = renderer.createPipeline();
+        //pipeline.ptr->initialize(4);
+
+        //eigen::ClearStage clearStage;
+        //clearStage.targets = displayTargets.ptr;
+        //clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
+        //pipeline.ptr->addStage(clearStage);
 
         //Eigen::TextureSystem& textureSystem = system.GetTextureSystem();
         //eigen::TextureTargetPtr::Config targetCfg;

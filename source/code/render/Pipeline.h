@@ -12,13 +12,16 @@ namespace eigen
 
     class Pipeline :            public RefCounted<Pipeline>
     {
-    public:
                                 friend class PipelineManager;
+    public:
 
-        void                    initialize(unsigned initialStageCapacity);
+        struct Config
+        {
+            Stage**             stages;
+            unsigned            stageCount;
+        };
 
-        void                    reset();
-        void                    addStage(const Stage& stage);
+        Error                   initialize(Stage** stages, unsigned stageCount);
 
         unsigned                getStageCount() const;
         const Stage&            getStage(unsigned index) const;
@@ -28,6 +31,7 @@ namespace eigen
     protected:
                                 friend void Delete<Pipeline>(Pipeline*);
                                 friend class Worklist;
+                                friend class Composer;
 
                                 Pipeline();
                                 ~Pipeline();
@@ -37,6 +41,7 @@ namespace eigen
         PipelineManager*        _manager    = 0;
         RenderPort::Set         _portSet;   
         Stage**                 _stages     = 0;
+        Stage*                  _start      = 0;
         unsigned                _count      = 0;
         unsigned                _capacity   = 0;
     };
@@ -62,20 +67,21 @@ namespace eigen
         BatchStage&             addBatchStage(TargetSet* targets);
         FilterStage&            addFilter(TargetSet* targets);
 
-        void                    saveToPipeline(Pipeline* pipeline);
-        PipelinePtr             createPipeline(Renderer& renderer);
+        void                    saveToPipeline(Pipeline* pipeline) const;
+        PipelinePtr             createPipeline() const;
 
         unsigned                getStageCount() const;
-        const Stage&            getStage(unsigned index) const;
 
     protected:
 
-        void                    reserve(unsigned count);
+        void                    reserve(unsigned bytes);
 
         PipelineManager&        _manager;
-        Stage**                 _stages = 0;
-        unsigned                _count = 0;
-        unsigned                _capacity = 0;
+        Stage*                  _start          = 0;
+        Stage*                  _end            = 0;
+        Stage**                 _stages         = 0;
+        unsigned                _count          = 0;
+        unsigned                _bytesCapacity  = 0;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -127,6 +133,41 @@ namespace eigen
         Pipeline* pipeline = new(AllocateMemory<Pipeline>(&_pipelineAllocator, 1)) Pipeline();
         pipeline->_manager = this;
         return pipeline;
+    }
+
+    inline ClearStage& Composer::addClear(TargetSet* targets) throw()
+    {
+        reserve(sizeof(ClearStage));
+        ClearStage* stage = new(_end) ClearStage;
+        stage->targets = targets;
+        _end = stage + 1;
+        _count++;
+        return *stage;
+    }
+
+    inline BatchStage& Composer::addBatchStage(TargetSet* targets) throw()
+    {
+        reserve(sizeof(BatchStage));
+        BatchStage* stage = new(_end) BatchStage;
+        stage->targets = targets;
+        _end = stage + 1;
+        _count++;
+        return *stage;
+    }
+
+    inline FilterStage& Composer::addFilter(TargetSet* targets) throw()
+    {
+        reserve(sizeof(FilterStage));
+        FilterStage* stage = new(_end) FilterStage;
+        stage->targets = targets;
+        _end = stage + 1;
+        _count++;
+        return *stage;
+    }
+
+    inline unsigned Composer::getStageCount() const
+    {
+        return _count;
     }
 
 }

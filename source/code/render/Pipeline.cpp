@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "Renderer.h"
 
 namespace eigen
 {
@@ -9,46 +10,73 @@ namespace eigen
 
     Pipeline::~Pipeline()
     {
-        reset();
-        FreeMemory(_stages);
+        for (int i = -(int)_count; i < 0; i++)
+        {
+            ReleaseRef(_stages[i]->targets);
+        }
+        FreeMemory(_start);
     }
 
-    void Pipeline::reset()
+    Error Pipeline::initialize(Stage** stages, unsigned stageCount)
     {
-        while (_count > 0)
+        assert(_stages == nullptr);     // already initialized
+
+        unsigned bytes = 0;
+        for (unsigned i = 0; i < stageCount; i++)
         {
-            Stage* last = _stages[--_count];
-            switch (last->type)
+            if (stages[i]->targets == nullptr)
+            {
+                EIGEN_RETURN_ERROR("Stage %d has invalid targets", (long)i);
+            }
+            switch(stages[i]->type)
             {
             case Stage::Type::Clear:
-                Delete((ClearStage*)last);
+                bytes += sizeof(ClearStage);
                 break;
             case Stage::Type::Batch:
-                Delete((BatchStage*)last);
+                if (((BatchStage*)stages[i])->renderPort == nullptr)
+                {
+                    EIGEN_RETURN_ERROR("Stage %d has null render port", (long)i);
+                }
+                bytes += sizeof(BatchStage);
                 break;
             case Stage::Type::Filter:
-                Delete((FilterStage*)last);
+                bytes += sizeof(FilterStage);
+                break;
+            default:
+                EIGEN_RETURN_ERROR("Invalid stage type at location %d", (long)i);
+            }
+        }
+
+        bytes += stageCount*sizeof(Stage*);
+        _start = (Stage*)AllocateMemory<char>(_manager->_allocator, bytes);
+        Allocation::From(_start)->_metadata = (void*)1; // pipeline uses allocation metadata as refcount
+        _stages = (Stage**)((char*)_start + bytes);
+        _count = stageCount;
+
+        Stage* last = _start;
+        for (int i = -(int)_count; i < 0; i++)
+        {
+            AddRef(last->targets);
+            _stages[-i] = last;
+            switch(last->type)
+            {
+            case Stage::Type::Clear:
+                last = (ClearStage*)last + 1;
+                break;
+            case Stage::Type::Batch:
+                _portSet |= ((BatchStage*)last)->renderPort->getBit();
+                last = (BatchStage*)last + 1;
+                break;
+            case Stage::Type::Filter:
+                last = (FilterStage*)last + 1;
+                break;
+            default:
                 break;
             }
-            (RefPtr<TargetSet>&)last->targets = nullptr;
         }
 
-        _portSet.clear();
-    }
-
-    void Pipeline::initialize(unsigned initialStageCapacity)
-    {
-        reset();
-
-        if (initialStageCapacity > _capacity)
-        {
-            if (_stages)
-            {
-                FreeMemory(_stages);
-            }
-            _stages = AllocateMemory<Stage*>(_manager->_allocator, initialStageCapacity);
-            _capacity = initialStageCapacity;
-        }
+        EIGEN_RETURN_OK();
     }
 
     void PipelineManager::initialize(Allocator* allocator, unsigned initialCapacity)
@@ -62,50 +90,62 @@ namespace eigen
         _filterStageAllocator.initialize(allocator, sizeof(FilterStage), 32);
     }
 
-    inline void Pipeline::reserve(unsigned count) throw()
+    Composer::Composer(Renderer& renderer, unsigned initialStageCapacity)
+        : _manager(renderer.getPipelineManager())
     {
-        if (_count + count > _capacity)
+        _bytesCapacity = initialStageCapacity * (sizeof(BatchStage)+sizeof(ClearStage))/2;
+        _bytesCapacity = std::max(_bytesCapacity, (unsigned)sizeof(ClearStage));
+        _bytesCapacity += initialStageCapacity * sizeof(Stage*);
+        _start = (Stage*)AllocateMemory<char>(_manager._allocator, _bytesCapacity);
+        _end = _start;
+    }
+
+    Composer::~Composer()
+    {
+        FreeMemory(_start);
+    }
+
+    void Composer::reset()
+    {
+        for (int i = -(int)_count; i < 0; i++)
         {
-            _capacity += _count + count;
-            Stage** stages = AllocateMemory<Stage*>(_manager->_allocator, _capacity);
-            memcpy(stages, _stages, _count * sizeof(*stages));
-            FreeMemory(_stages);
+            ReleaseRef(_stages[i]->targets);
+        }
+
+        _end = _start;
+        _count = 0;
+    }
+
+    void Composer::reserve(unsigned bytes)
+    {
+        if ((char*)_end + bytes > (char*)(_stages - _count - 1))
+        {
+            _bytesCapacity *= 2;
+            Stage* start = (Stage*)AllocateMemory<char>(_manager._allocator, _bytesCapacity);
+            Stage** stages = (Stage**)((char*)start + _bytesCapacity);
+            memcpy(start, _start, (char*)_end - (char*)_start);
+
+            ptrdiff_t offset = (char*)start - (char*)_start;
+            for (int i = -(int)_count; i < 0; i++)
+            {
+                stages[i] = _stages[i];
+                (char*&)stages[i] += offset;
+            }
+
+            FreeMemory(_start);
+            _start = start;
+            (char*&)_end += offset;
+            _stages = stages;
         }
     }
 
-    void Pipeline::addStage(const Stage& stage) throw()
+    void Composer::saveToPipeline(Pipeline* pipeline) const
     {
-        if (!stage.targets)
-        {
-            assert(false);  // must set Stage targets
-            return;
-        }
+    }
 
-        Stage* last = nullptr;
-
-        reserve(1);
-
-        switch (stage.type)
-        {
-        case Stage::Type::Clear:
-            last = new(AllocateMemory<ClearStage>(&_manager->_clearStageAllocator, 1)) ClearStage((ClearStage&)stage);
-            break;
-        case Stage::Type::Batch:
-            last = new(AllocateMemory<BatchStage>(&_manager->_batchStageAllocator, 1)) BatchStage((BatchStage&)stage);
-            _portSet |= ((BatchStage&)stage).renderPort->getBit();
-            break;
-        case Stage::Type::Filter:
-            last = new(AllocateMemory<FilterStage>(&_manager->_filterStageAllocator, 1)) FilterStage((FilterStage&)stage);
-            break;
-        default:
-            assert(false);
-            return;
-        }
-
-        AddRef(last->targets);
-
-        _stages[_count] = last;
-        _count++;
+    PipelinePtr Composer::createPipeline() const
+    {
+        return nullptr;
     }
 
 }

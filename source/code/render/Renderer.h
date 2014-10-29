@@ -98,6 +98,7 @@ namespace eigen
     public:
 
         PlatformDetails&        getPlatformDetails();
+        PipelineManager&        getPipelineManager();
         int8_t*                 scratchAlloc(unsigned bytes);
 
     };
@@ -136,6 +137,11 @@ namespace eigen
         deadMeat.object = obj;
         deadMeat.deleteFunc = (DeleteFunc)Delete<T>;
         deadMeat.frameNumber = _frameNumber + delay;
+    }
+
+    inline PipelineManager& Renderer::getPipelineManager()
+    {
+        return _pipelineManager;
     }
 
 }
