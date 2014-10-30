@@ -4,7 +4,7 @@
 #include "core/PodDeque.h"
 #include "core/Error.h"
 #include "Worklist.h"
-#include "Pipeline.h"
+#include "RenderPlan.h"
 #include "Display.h"
 #include "Texture.h"
 #include "TargetSet.h"
@@ -38,7 +38,7 @@ namespace eigen
         Error                   initialize(const Config& config);
         void                    cleanup();          // Optional, handled by dtor
 
-        Worklist*               openWorklist(const Pipeline* pipeline);
+        Worklist*               openWorklist(const RenderPlan* plan);
 
         void                    commenceWork();
 
@@ -48,7 +48,11 @@ namespace eigen
         DisplayPtr              createDisplay();
         TexturePtr              createTexture();
         TargetSetPtr            createTargetSet();
-        PipelinePtr             createPipeline();
+        RenderPlanPtr           createPlan();
+
+        //TexturePtr              createTexture(const Texture::Config& cfg, Error* errorOut = nullptr);
+        //TargetSetPtr            createTargetSet(const TargetSet::Config& cfg, Error* errorOut = nullptr);
+        //RenderPlanPtr           createPlan(const RenderPlanner& planner, Error* errorOut = nullptr);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +61,7 @@ namespace eigen
         friend void             DestroyRefCounted(Display*);
         friend void             DestroyRefCounted(Texture*);
         friend void             DestroyRefCounted(TargetSet*);
-        friend void             DestroyRefCounted(Pipeline*);
+        friend void             DestroyRefCounted(RenderPlan*);
 
         struct DeadMeat
         {
@@ -79,7 +83,7 @@ namespace eigen
         BlockAllocator          _displayAllocator;
         BlockAllocator          _textureAllocator;
         BlockAllocator          _targetSetAllocator;
-        PipelineManager         _pipelineManager;
+        RenderPlanManager       _planManager;
         Keysmith<RenderPort>    _portSmith;
         PodDeque<DeadMeat>      _deadMeat;
 
@@ -98,7 +102,7 @@ namespace eigen
     public:
 
         PlatformDetails&        getPlatformDetails();
-        PipelineManager&        getPipelineManager();
+        RenderPlanManager&      getPlanManager();
         int8_t*                 scratchAlloc(unsigned bytes);
 
     };
@@ -139,9 +143,9 @@ namespace eigen
         deadMeat.frameNumber = _frameNumber + delay;
     }
 
-    inline PipelineManager& Renderer::getPipelineManager()
+    inline RenderPlanManager& Renderer::getPlanManager()
     {
-        return _pipelineManager;
+        return _planManager;
     }
 
 }

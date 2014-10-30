@@ -162,10 +162,13 @@ void Demo::run()
         renderer.getPort("Three");
         renderer.getPort("Four");
 
-        eigen::Composer composer(renderer, 4);
-        eigen::ClearStage& clearStage = composer.addClear(displayTargets);
+        eigen::RenderPlanPtr plan = renderer.createPlan();
+        eigen::RenderPlanner planner(renderer, 1);
+
+        eigen::ClearStage& clearStage = planner.addClear(displayTargets.ptr);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
-        eigen::PipelinePtr pipeline = composer.createPipeline();
+
+        plan.ptr->initialize(planner);
 
         //eigen::PipelinePtr pipeline = renderer.createPipeline();
         //pipeline.ptr->initialize(4);
@@ -199,7 +202,7 @@ void Demo::run()
                 DispatchMessage(&msg);
             }
 
-            eigen::Worklist* worklist = renderer.openWorklist(pipeline);
+            eigen::Worklist* worklist = renderer.openWorklist(plan);
             worklist->finish();
 
             renderer.commenceWork();

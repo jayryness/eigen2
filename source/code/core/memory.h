@@ -44,8 +44,11 @@ namespace eigen
         void                destroy();
         void*               getMemory() const;
 
-        void*              _metadata;
-        Allocator*         _allocator;
+        union               {
+        intptr_t            _metadataInt;
+        void*               _metadataPtr;
+                            };
+        Allocator*          _allocator;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -230,12 +233,12 @@ namespace eigen
         Allocation* allocation = _head->free;
 
         _head->count++;
-        _head->free = (Allocation*)allocation->_metadata;   // next free
-        allocation->_metadata = _head;                      // now metadata points back to block instead of next
+        _head->free = (Allocation*)allocation->_metadataPtr;    // next free
+        allocation->_metadataPtr = _head;                       // now metadata points back to block instead of next
 
         if (_head->count == _head->capacity)
         {
-            assert(_head->free->_metadata == nullptr);
+            assert(_head->free->_metadataPtr == nullptr);
             addBlock();
         }
 
@@ -245,9 +248,9 @@ namespace eigen
     inline void BlockAllocator::free(void* ptr)
     {
         Allocation* allocation = (Allocation*)ptr;
-        Block* block = (Block*)allocation->_metadata;
+        Block* block = (Block*)allocation->_metadataPtr;
 
-        allocation->_metadata = block->free;
+        allocation->_metadataPtr = block->free;
         block->free = allocation;
         block->count--;
 

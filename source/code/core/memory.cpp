@@ -19,10 +19,10 @@ namespace eigen
         Allocation* free = block->free;
         for (unsigned i = 0; i < capacity-1; i++)
         {
-            free->_metadata = (char*)free + itemSize;
+            free->_metadataPtr = (char*)free + itemSize;
             (char*&)free += itemSize;
         }
-        free->_metadata = nullptr;
+        free->_metadataPtr = nullptr;
 
         return block;
     }

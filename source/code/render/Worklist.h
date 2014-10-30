@@ -2,13 +2,12 @@
 #include <cstdint>
 
 #include "RenderPort.h"
-#include "Pipeline.h"
+#include "RenderPlan.h"
 
 namespace eigen
 {
 
     class Renderer;
-    class Pipeline;
 
     struct Batch;
 
@@ -38,20 +37,20 @@ namespace eigen
                             friend class Renderer;
 
                             Worklist() {}
-                            Worklist(Renderer* renderer, const Pipeline* pipeline);
+                            Worklist(Renderer* renderer, const RenderPlan* plan);
 
-        Renderer*          _renderer;
-        const Pipeline*    _pipeline;
-        RenderPort::Set    _portSet;
-        int8_t*            _buffer;
-        int8_t*            _bufferEnd;
-        Slot               _slots[MaxRenderPorts];  // todo compare vs single slot and sort
+        Renderer*           _renderer;
+        const RenderPlan*   _plan;
+        RenderPort::Set     _portSet;
+        int8_t*             _buffer;
+        int8_t*             _bufferEnd;
+        Slot                _slots[MaxRenderPorts];  // todo compare vs single slot and sort
     };
 
-    inline Worklist::Worklist(Renderer* renderer, const Pipeline* pipeline)
+    inline Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
         : _renderer(renderer)
-        , _pipeline(pipeline)
-        , _portSet(pipeline->_portSet)
+        , _plan(plan)
+        , _portSet(plan->_portSet)
         , _buffer(0)
         , _bufferEnd(0)
     {

@@ -16,7 +16,9 @@ namespace eigen
             }
         }
 
-        RefPtr(const RefPtr& other) = delete;
+        RefPtr(const RefPtr& other) : RefPtr(other.ptr)
+        {
+        }
 
         ~RefPtr()
         {

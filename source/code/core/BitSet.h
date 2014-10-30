@@ -10,6 +10,8 @@ namespace eigen
 
         enum {      Size = N };
 
+                    BitSet();
+
         bool        operator==(const BitSet& rhs) const;
 
         void        operator&=(const BitSet& rhs);
@@ -32,6 +34,11 @@ namespace eigen
 
         uint64_t   _parts[Parts];
     };
+
+    template<int N> BitSet<N>::BitSet()
+    {
+        clear();
+    }
 
     template<int N> bool BitSet<N>::operator==(const BitSet& rhs) const
     {

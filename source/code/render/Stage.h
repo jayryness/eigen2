@@ -115,6 +115,7 @@ namespace eigen
     inline ClearStage::ClearStage()
     {
         type = Type::Clear;
+        memset(colors, 0, sizeof(colors));
     }
 
     inline BatchStage::BatchStage()

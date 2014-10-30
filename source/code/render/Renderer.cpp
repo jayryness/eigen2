@@ -15,7 +15,7 @@ namespace eigen
 
         _deadMeat.initialize(config.allocator, 64);
         _portSmith.initialize(config.allocator, 2048);
-        _pipelineManager.initialize(config.allocator, 8);
+        _planManager.initialize(config.allocator, 8);
         return platformInit(config);    // see e.g. RendererDx11.cpp
     }
 
@@ -44,25 +44,25 @@ namespace eigen
         }
     }
 
-    PipelinePtr Renderer::createPipeline()
+    RenderPlanPtr Renderer::createPlan()
     {
-        return _pipelineManager.create();
+        return _planManager.create();
     }
 
-    void DestroyRefCounted(Pipeline* pipeline)
+    void DestroyRefCounted(RenderPlan* plan)
     {
-        Renderer& renderer = *StructFromMember(&Renderer::_pipelineManager, pipeline->getManager());
-        renderer.scheduleDeletion(pipeline, 1);
+        Renderer& renderer = *StructFromMember(&Renderer::_planManager, plan->getManager());
+        renderer.scheduleDeletion(plan, 1);
     }
 
-    Worklist* Renderer::openWorklist(const Pipeline* pipeline)
+    Worklist* Renderer::openWorklist(const RenderPlan* plan)
     {
         if (_worklistCount == MaxWorklists)
         {
             return nullptr;
         }
 
-        Worklist* worklist = new(_worklists + _worklistCount++) Worklist(this, pipeline);
+        Worklist* worklist = new(_worklists + _worklistCount++) Worklist(this, plan);
         return worklist;
     }
 

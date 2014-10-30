@@ -79,7 +79,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="RenderPort.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="Worklist.h" />
@@ -100,7 +100,7 @@
     <ClCompile Include="dx11\RendererDx11.cpp" />
     <ClCompile Include="dx11\TargetSetDx11.cpp" />
     <ClCompile Include="dx11\TextureDx11.cpp" />
-    <ClCompile Include="Pipeline.cpp" />
+    <ClCompile Include="RenderPlan.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="TargetSet.cpp" />
     <ClCompile Include="Texture.cpp" />
