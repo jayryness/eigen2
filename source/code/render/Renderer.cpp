@@ -57,12 +57,15 @@ namespace eigen
 
     Worklist* Renderer::openWorklist(RenderPlan* plan)
     {
-        if (_worklistCount == MaxWorklists || Failed(plan->validate()))
+        bool exhausted = _worklistEnd == _worklistEndVacant;
+        bool validated = Ok(plan->validate());
+        if (exhausted || !validated)
         {
             return nullptr;
         }
 
-        Worklist* worklist = new(_worklists + _worklistCount++) Worklist(this, plan);
+        Worklist* worklist = new(_worklists + _worklistEnd) Worklist(this, plan);
+        _worklistEnd = (_worklistEnd + 1) % MaxWorklists;
         return worklist;
     }
 
@@ -70,7 +73,9 @@ namespace eigen
     {
         // Ensure that no worklists were left open
 
-        for (unsigned i = 0; i < _worklistCount; i++)
+        Worklist* head = nullptr;
+        Worklist** tail = &head;
+        for (unsigned i = _worklistStart; i != _worklistEnd; i = (i+1) % MaxWorklists)
         {
             if (_worklists[i]._renderer)
             {
@@ -78,9 +83,16 @@ namespace eigen
                 assert(false);      // must call Worklist::finish() on all open worklists before commencing work
                 return;
             }
+
+            *tail = _worklists + i;
+            tail = &(*tail)->_next;
         }
+        *tail = nullptr;
 
         // TODO: sync to submission thread
+        // retire completed worklists
+        // attach worklists
+        // kick submission thread
 
         if (_scratchAllocPtr > _scratchAllocEnd)
         {
@@ -110,7 +122,8 @@ namespace eigen
             _deadMeat.removeFirst();
         }
 
-        _worklistCount = 0;
+        _worklistEndVacant = _worklistStart;
+        _worklistStart = _worklistEnd;
         _frameNumber++;
         // TODO: kick submission thread
     }

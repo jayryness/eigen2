@@ -79,6 +79,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="internal\WorkCoordinator.h" />
     <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="RenderPort.h" />
     <ClInclude Include="Stage.h" />

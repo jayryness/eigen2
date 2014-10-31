@@ -39,6 +39,7 @@ namespace eigen
                             Worklist() {}
                             Worklist(Renderer* renderer, const RenderPlan* plan);
 
+        Worklist*           _next;
         Renderer*           _renderer;
         Stage*              _stages;
         RenderPort::Set     _portSet;

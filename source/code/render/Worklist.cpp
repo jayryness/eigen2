@@ -5,7 +5,8 @@ namespace eigen
 {
 
     Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
-        : _renderer(renderer)
+        : _next(nullptr)
+        , _renderer(renderer)
         , _portSet(plan->_portSet)
         , _buffer(0)
         , _bufferEnd(0)

@@ -72,7 +72,7 @@ namespace eigen
                                 template<class T>
         void                    scheduleDeletion(T* obj, unsigned delay);
 
-        enum {                  MaxWorklists = 8 };
+        enum {                  MaxWorklists = 12 };
 
         Config                  _config;
 
@@ -83,15 +83,17 @@ namespace eigen
         Keysmith<RenderPort>    _portSmith;
         PodDeque<DeadMeat>      _deadMeat;
 
-        int8_t*                 _scratchMem      = 0;
+        int8_t*                 _scratchMem         = 0;
 
-        std::atomic<int8_t*>    _scratchAllocPtr = 0;
-        int8_t*                 _scratchAllocEnd = 0;
+        std::atomic<int8_t*>    _scratchAllocPtr    = 0;
+        int8_t*                 _scratchAllocEnd    = 0;
 
         Worklist                _worklists[MaxWorklists];
-        unsigned                _worklistCount   = 0;
+        unsigned                _worklistStart      = 0;
+        unsigned                _worklistEnd        = 0;
+        unsigned                _worklistEndVacant  = MaxWorklists-1;
 
-        unsigned                _frameNumber     = 0;
+        unsigned                _frameNumber        = 0;
 
         void*                   _platformDetails[8];
 
