@@ -40,21 +40,11 @@ namespace eigen
                             Worklist(Renderer* renderer, const RenderPlan* plan);
 
         Renderer*           _renderer;
-        const RenderPlan*   _plan;
+        Stage*              _stages;
         RenderPort::Set     _portSet;
         int8_t*             _buffer;
         int8_t*             _bufferEnd;
-        Slot                _slots[MaxRenderPorts];  // todo compare vs single slot and sort
+        Slot                _slots[MaxRenderPorts];  // todo compare vs single slot and sort. or: it would be easy enough to condense this to only the slots of active ports for the renderplan
     };
-
-    inline Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
-        : _renderer(renderer)
-        , _plan(plan)
-        , _portSet(plan->_portSet)
-        , _buffer(0)
-        , _bufferEnd(0)
-    {
-        memset(_slots, 0, sizeof(_slots));
-    }
 
 }

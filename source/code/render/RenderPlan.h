@@ -4,11 +4,12 @@
 
 namespace eigen
 {
-    class RenderPlanner;
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
     // RenderPlan
+    //
+    // A sequence of Stages executed by the renderer to process a Worklist
     //
 
     class RenderPlan :          public RefCounted<RenderPlan>
@@ -16,66 +17,39 @@ namespace eigen
                                 friend class RenderPlanManager;
     public:
 
-        Error                   initialize(Stage** stages, unsigned stageCount);
-        Error                   initialize(const RenderPlanner& planner);
+        void                    reserve(uintptr_t bytes);   // not required, pre-allocates space for stages
+
+        void                    reset();
+
+        ClearStage&             addClearStage(TargetSetPtr targets);
+        BatchStage&             addBatchStage(TargetSetPtr targets);
+        FilterStage&            addFilterStage(TargetSetPtr targets);
+
+        Error                   addStages(Stage** stages, unsigned stageCount);
 
         unsigned                getStageCount() const;
-        Stage*                  getFirstStage() const;
-        Stage*                  getNextStage(Stage* prev) const;
+
+        Error                   validate();
 
         RenderPlanManager*      getManager() const;
 
     protected:
-                                friend void Delete<RenderPlan>(RenderPlan*);
                                 friend class Worklist;
-                                friend class RenderPlanner;
+                                friend void Delete<RenderPlan>(RenderPlan*);
 
                                 RenderPlan();
                                 ~RenderPlan();
 
-        void                    reserve(unsigned count);
-
-        RenderPlanManager*      _manager    = 0;
-        RenderPort::Set         _portSet;   
-        Stage*                  _start      = 0;
-        Stage*                  _end        = 0;
-        unsigned                _count      = 0;
-    };
-
-    typedef RefPtr<RenderPlan>  RenderPlanPtr;
-
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // RenderPlanner
-    //
-    // Helper class for building renderplans
-    //
-
-    class RenderPlanner
-    {
-    public:
-                                RenderPlanner(Renderer& renderer, unsigned initialStageCapacity);
-                                ~RenderPlanner();
-
-        void                    reset();
-
-        ClearStage&             addClear(TargetSetPtr targets);
-        BatchStage&             addBatchStage(TargetSetPtr targets);
-        FilterStage&            addFilter(TargetSetPtr targets);
-
-        unsigned                getStageCount() const;
-
-    protected:
-                                friend class RenderPlan;
-
-        void                    reserve(unsigned bytes);
-
-        RenderPlanManager&      _manager;
+        RenderPlanManager*      _manager        = 0;
+        RenderPort::Set         _portSet;
         Stage*                  _start          = 0;
         Stage*                  _end            = 0;
+        Stage*                  _validated      = 0;
         unsigned                _count          = 0;
         unsigned                _bytesCapacity  = 0;
     };
+
+    typedef RefPtr<RenderPlan>  RenderPlanPtr;
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -91,8 +65,7 @@ namespace eigen
         RenderPlanPtr           create();
 
     protected:
-                                friend class RenderPlanner;
-                                friend class RenderPlan; // todo
+                                friend class RenderPlan;
 
         Allocator*              _allocator = 0;
         BlockAllocator          _planAllocator;
@@ -119,7 +92,7 @@ namespace eigen
         return plan;
     }
 
-    inline ClearStage& RenderPlanner::addClear(TargetSetPtr targets) throw()
+    inline ClearStage& RenderPlan::addClearStage(TargetSetPtr targets) throw()
     {
         assert(targets.ptr != nullptr);
         reserve(sizeof(ClearStage));
@@ -130,7 +103,7 @@ namespace eigen
         return *stage;
     }
 
-    inline BatchStage& RenderPlanner::addBatchStage(TargetSetPtr targets) throw()
+    inline BatchStage& RenderPlan::addBatchStage(TargetSetPtr targets) throw()
     {
         assert(targets.ptr != nullptr);
         reserve(sizeof(BatchStage));
@@ -141,7 +114,7 @@ namespace eigen
         return *stage;
     }
 
-    inline FilterStage& RenderPlanner::addFilter(TargetSetPtr targets) throw()
+    inline FilterStage& RenderPlan::addFilterStage(TargetSetPtr targets) throw()
     {
         assert(targets.ptr != nullptr);
         reserve(sizeof(FilterStage));
@@ -150,11 +123,6 @@ namespace eigen
         _end = stage + 1;
         _count++;
         return *stage;
-    }
-
-    inline unsigned RenderPlanner::getStageCount() const
-    {
-        return _count;
     }
 
 }

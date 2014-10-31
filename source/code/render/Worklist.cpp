@@ -4,6 +4,21 @@
 namespace eigen
 {
 
+    Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
+        : _renderer(renderer)
+        , _portSet(plan->_portSet)
+        , _buffer(0)
+        , _bufferEnd(0)
+    {
+        // copy the plan into scratch memory
+        _stages = (Stage*)renderer->scratchAlloc((char*)plan->_end - (char*)plan->_start);
+        assert(_stages != nullptr); // out of scratch memory
+        memcpy(_stages, plan->_start, (char*)plan->_end - (char*)plan->_start);
+
+        // clear batch slots
+        memset(_slots, 0, sizeof(_slots));
+    }
+
     void Worklist::commitBatch(Batch* batch, RenderPort* port, float sortDepth)
     {
         // Batch is ignored if the pipeline doesn't listen to this port

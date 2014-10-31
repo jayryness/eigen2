@@ -25,7 +25,7 @@ namespace eigen
         }
 
         Error err = platformInit(config);
-        if (ok(err))
+        if (Ok(err))
         {
             _config = config;
 

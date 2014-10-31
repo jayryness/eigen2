@@ -33,11 +33,6 @@ namespace eigen
             swap(other);
         }
 
-        operator T*()
-        {
-            return ptr;
-        }
-
         template<class T2> void swap(RefPtr<T2>& other)
         {
             T* temp = ptr;

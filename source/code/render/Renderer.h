@@ -38,7 +38,7 @@ namespace eigen
         Error                   initialize(const Config& config);
         void                    cleanup();          // Optional, handled by dtor
 
-        Worklist*               openWorklist(const RenderPlan* plan);
+        Worklist*               openWorklist(RenderPlan* plan);
 
         void                    commenceWork();
 
@@ -49,10 +49,6 @@ namespace eigen
         TexturePtr              createTexture();
         TargetSetPtr            createTargetSet();
         RenderPlanPtr           createPlan();
-
-        //TexturePtr              createTexture(const Texture::Config& cfg, Error* errorOut = nullptr);
-        //TargetSetPtr            createTargetSet(const TargetSet::Config& cfg, Error* errorOut = nullptr);
-        //RenderPlanPtr           createPlan(const RenderPlanner& planner, Error* errorOut = nullptr);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -103,7 +99,7 @@ namespace eigen
 
         PlatformDetails&        getPlatformDetails();
         RenderPlanManager&      getPlanManager();
-        int8_t*                 scratchAlloc(unsigned bytes);
+        int8_t*                 scratchAlloc(uintptr_t bytes);
 
     };
 
@@ -124,7 +120,7 @@ namespace eigen
         return _frameNumber;
     }
 
-    inline int8_t* Renderer::scratchAlloc(unsigned bytes)
+    inline int8_t* Renderer::scratchAlloc(uintptr_t bytes)
     {
         int8_t* p = _scratchAllocPtr.fetch_add((bytes + 15) & ~15, std::memory_order_relaxed);  // p gets old value
         if (p + bytes > _scratchAllocEnd)

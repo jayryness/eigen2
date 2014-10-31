@@ -16,8 +16,8 @@ namespace eigen
     public:
         Error(const ErrorMsg* msg = nullptr);
 
-        friend bool ok(const Error& error);
-        friend bool failed(const Error& error);
+        friend bool Ok(const Error& error);
+        friend bool Failed(const Error& error);
 
         const char* getText() const;
 
@@ -40,12 +40,12 @@ namespace eigen
     {
     }
 
-    inline bool ok(const Error& error)
+    inline bool Ok(const Error& error)
     {
         return error._msg == nullptr;
     }
 
-    inline bool failed(const Error& error)
+    inline bool Failed(const Error& error)
     {
         return error._msg != nullptr;
     }

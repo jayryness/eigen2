@@ -55,9 +55,9 @@ namespace eigen
         renderer.scheduleDeletion(plan, 1);
     }
 
-    Worklist* Renderer::openWorklist(const RenderPlan* plan)
+    Worklist* Renderer::openWorklist(RenderPlan* plan)
     {
-        if (_worklistCount == MaxWorklists)
+        if (_worklistCount == MaxWorklists || Failed(plan->validate()))
         {
             return nullptr;
         }

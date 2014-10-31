@@ -137,7 +137,7 @@ void Demo::run()
     eigen::Renderer renderer;
     {
         eigen::Error error = renderer.initialize(renderConfig);
-        if (failed(error))
+        if (Failed(error))
         {
             puts(error.getText());
             MessageBoxA(_hwnd, error.getText(), "Error", MB_OK);
@@ -163,12 +163,16 @@ void Demo::run()
         renderer.getPort("Four");
 
         eigen::RenderPlanPtr plan = renderer.createPlan();
-        eigen::RenderPlanner planner(renderer, 1);
 
-        eigen::ClearStage& clearStage = planner.addClear(displayTargets.ptr);
+        eigen::ClearStage& clearStage = plan.ptr->addClearStage(displayTargets.ptr);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
-
-        plan.ptr->initialize(planner);
+        error = plan.ptr->validate();
+        if (Failed(error))
+        {
+            puts(error.getText());
+            MessageBoxA(_hwnd, error.getText(), "Error", MB_OK);
+            return;
+        }
 
         //eigen::PipelinePtr pipeline = renderer.createPipeline();
         //pipeline.ptr->initialize(4);
@@ -202,7 +206,7 @@ void Demo::run()
                 DispatchMessage(&msg);
             }
 
-            eigen::Worklist* worklist = renderer.openWorklist(plan);
+            eigen::Worklist* worklist = renderer.openWorklist(plan.ptr);
             worklist->finish();
 
             renderer.commenceWork();

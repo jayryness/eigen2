@@ -59,11 +59,6 @@ namespace eigen
 
                                 ClearStage();
 
-        ClearStage&             setColor(int target, const Float4& color);
-        ClearStage&             setDepth(float depth);
-        ClearStage&             setStencil(unsigned stencil);
-        ClearStage&             setFlags(Flags flags);
-
         Float4                  colors[TargetSet::MaxTextures];
         float                   depth   = 0.f;
         unsigned                stencil = 0;
@@ -87,9 +82,6 @@ namespace eigen
         };
                                 BatchStage();
 
-        BatchStage&             setRenderPort(RenderPort* port);
-        BatchStage&             setSortType(SortType sortType);
-
         RenderPort*             renderPort;
         SortType                sortType;
     };
@@ -99,7 +91,7 @@ namespace eigen
     // FilterStage
     //
 
-    struct FilterStage        : public Stage  // a.k.a. quad stage
+    struct FilterStage        : public Stage
     {
         // TODO
                                 FilterStage();
