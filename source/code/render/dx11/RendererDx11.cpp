@@ -54,7 +54,34 @@ namespace eigen
             EIGEN_RETURN_ERROR("Failed to retrieve DXGI factory, HRESULT = %d", hr);
         }
 
+        // Create deferred contexts if num threads > 1
+        if (config.submitThreads > 1)
+        {
+            plat.deferredContextCount = config.submitThreads;
+
+            plat.deferredContexts = AllocateMemory<ID3D11DeviceContext*>(config.allocator, config.submitThreads);
+            memset(plat.deferredContexts, 0, config.submitThreads*sizeof(*plat.deferredContexts));
+            for (unsigned i = 0; i < config.submitThreads; i++)
+            {
+                hr = plat.device.Get()->CreateDeferredContext(0, plat.deferredContexts+i);
+                if (FAILED(hr))
+                {
+                    EIGEN_RETURN_ERROR("Failed to create D3D deferred context, HRESULT = %d", hr);
+                }
+            }
+        }
+
         EIGEN_RETURN_OK();
+    }
+
+    Renderer::PlatformDetails::~PlatformDetails()
+    {
+        for (unsigned i = 0; i < deferredContextCount; i++)
+        {
+            deferredContexts[i]->Release();
+        }
+
+        FreeMemory(deferredContexts);
     }
 
     void Renderer::platformCleanup()

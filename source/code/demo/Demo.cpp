@@ -133,6 +133,7 @@ void Demo::run()
     eigen::Renderer::Config renderConfig;
     renderConfig.debugEnabled   = true;
     renderConfig.scratchSize    = 16*1024*1024;
+    renderConfig.submitThreads  = 1;
 
     eigen::Renderer renderer;
     {

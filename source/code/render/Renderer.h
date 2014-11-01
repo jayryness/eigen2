@@ -20,15 +20,18 @@ namespace eigen
     {
     public:
                                 struct PlatformConfig;
-                                struct PlatformDetails;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        // User-facing API
+        //
 
         struct Config
         {
             Allocator*          allocator       = Mallocator::Get();
             bool                debugEnabled    = false;
             unsigned            scratchSize     = 16*1024*1024;
+            unsigned            submitThreads   = 1;
             PlatformConfig*     platformConfig  = nullptr;
         };
 
@@ -50,9 +53,11 @@ namespace eigen
         TargetSetPtr            createTargetSet();
         RenderPlanPtr           createPlan();
 
+        //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     protected:
+                                struct PlatformDetails;
 
         friend void             DestroyRefCounted(Display*);
         friend void             DestroyRefCounted(Texture*);

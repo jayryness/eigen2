@@ -10,15 +10,18 @@ namespace eigen
 
     struct Renderer::PlatformConfig
     {
-        IDXGIAdapter*               adapter = nullptr;
+        IDXGIAdapter*                   adapter = nullptr;
     };
 
     struct Renderer::PlatformDetails
     {
-        ComPtr<IDXGIAdapter>        adapter;
-        ComPtr<IDXGIFactory>        dxgiFactory;
-        ComPtr<ID3D11Device>        device;
-        ComPtr<ID3D11DeviceContext> immContext;
+                                        ~PlatformDetails();
+        ComPtr<IDXGIAdapter>            adapter;
+        ComPtr<IDXGIFactory>            dxgiFactory;
+        ComPtr<ID3D11Device>            device;
+        ComPtr<ID3D11DeviceContext>     immContext;
+        ID3D11DeviceContext**           deferredContexts        = nullptr;
+        unsigned                        deferredContextCount    = 0;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

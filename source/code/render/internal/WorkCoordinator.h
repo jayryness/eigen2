@@ -6,7 +6,20 @@ namespace eigen
 
     struct WorkCoordinator
     {
-        Worklist* head;
+                            WorkCoordinator(Worklist* head);
+
+        void                operator()();
+
+        Worklist*           _head;
+
     };
 
+    inline WorkCoordinator::WorkCoordinator(Worklist* head)
+        : _head(head)
+    {
+    }
+
+    inline void WorkCoordinator::operator()()
+    {
+    }
 }
