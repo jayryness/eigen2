@@ -55,7 +55,8 @@ namespace eigen
             EIGEN_RETURN_ERROR("RenderPlan was invalid before addStages. Reason: \"%s\"", error.getText());
         }
 
-        RenderPort::Set portSet;
+        RenderPort::Set ports;
+        RenderPort::Set sortMasks[BatchStage::SortType::Count];
         unsigned bytes = 0;
         for (unsigned i = 0; i < stageCount; i++)
         {
@@ -70,11 +71,17 @@ namespace eigen
             }
             if (stages[i]->type == Stage::Type::Batch)
             {
-                if (((BatchStage*) stages[i])->renderPort == nullptr)
+                BatchStage* stage = (BatchStage*)stages[i];
+                if (stage->ports.isEmpty())
                 {
-                    EIGEN_RETURN_ERROR("Stage %d has null render port", (long) i);
+                    EIGEN_RETURN_ERROR("Stage %d specifies no ports", (long)i);
                 }
-                portSet |= ((BatchStage*) stages[i])->renderPort->getBit();
+                if (stage->sortType >= BatchStage::SortType::Count)
+                {
+                    EIGEN_RETURN_ERROR("Stage %d has invalid sort type", (long)i);
+                }
+                ports |= stage->ports;
+                sortMasks[stage->sortType] |= stage->ports;
             }
 
             bytes += size;
@@ -91,7 +98,8 @@ namespace eigen
         }
 
         _validated = _end;
-        _portSet = portSet;
+        _ports = ports;
+        memcpy(_sortMasks, sortMasks, sizeof(_sortMasks));
         _count += stageCount;
 
         EIGEN_RETURN_OK();
@@ -99,7 +107,8 @@ namespace eigen
 
     void RenderPlan::reset()
     {
-        _portSet.clear();
+        _ports.clear();
+        memset(_sortMasks, 0, sizeof(_sortMasks));
         _end = _validated = _start;
         _count = 0;
     }
@@ -140,12 +149,17 @@ namespace eigen
             }
             if (_validated->type == Stage::Type::Batch)
             {
-                RenderPort* port = ((BatchStage*)_validated)->renderPort;
-                if (port == nullptr)
+                BatchStage* stage = (BatchStage*)_validated; 
+                if (stage->ports.isEmpty())
                 {
-                    EIGEN_RETURN_ERROR("BatchStage has null render port", nullptr);
+                    EIGEN_RETURN_ERROR("BatchStage specifies no ports", nullptr);
                 }
-                _portSet |= port->getBit();
+                if (stage->sortType >= BatchStage::SortType::Count)
+                {
+                    EIGEN_RETURN_ERROR("BatchStage has invalid sort type", nullptr);
+                }
+                _ports |= stage->ports;
+                _sortMasks[stage->sortType] |= stage->ports;
             }
 
             _validated = NextStage(_validated);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "internal/WorkCoordinator.h"
 #include "core/RefCounted.h"
 #include "core/PodDeque.h"
 #include "core/Error.h"
@@ -9,6 +10,7 @@
 #include "Texture.h"
 #include "TargetSet.h"
 #include "RenderPort.h"
+#include <thread>
 
 namespace eigen
 {
@@ -56,8 +58,8 @@ namespace eigen
         //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected:
                                 struct PlatformDetails;
+    protected:
 
         friend void             DestroyRefCounted(Display*);
         friend void             DestroyRefCounted(Texture*);
@@ -97,6 +99,8 @@ namespace eigen
         unsigned                _worklistStart      = 0;
         unsigned                _worklistEnd        = 0;
         unsigned                _worklistEndVacant  = MaxWorklists-1;
+        WorkCoordinator         _workCoordinator;
+        std::thread             _workSubmissionThread;
 
         unsigned                _frameNumber        = 0;
 

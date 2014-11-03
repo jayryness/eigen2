@@ -30,8 +30,8 @@ namespace eigen
             Filter,
         };
 
-        TargetSet*              targets = nullptr;
         Type                    type    = Type::Unspecified;
+        TargetSet*              targets = nullptr;
 
     protected:
                                 Stage() {}
@@ -74,16 +74,15 @@ namespace eigen
     {
         enum SortType
         {
-            Default           = 0,
-            Performance       = Default,
+            Performance       = 0,
             IncreasingDepth,
             DecreasingDepth,
             Count
         };
                                 BatchStage();
 
-        RenderPort*             renderPort;
-        SortType                sortType;
+        RenderPort::Set         ports;
+        SortType                sortType    = SortType::Performance;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////

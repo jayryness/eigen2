@@ -41,7 +41,8 @@ namespace eigen
                                 ~RenderPlan();
 
         RenderPlanManager*      _manager        = 0;
-        RenderPort::Set         _portSet;
+        RenderPort::Set         _ports;
+        RenderPort::Set         _sortMasks[BatchStage::SortType::Count];
         Stage*                  _start          = 0;
         Stage*                  _end            = 0;
         Stage*                  _validated      = 0;

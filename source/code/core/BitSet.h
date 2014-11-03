@@ -12,11 +12,15 @@ namespace eigen
 
                     BitSet();
 
+        bool        isEmpty() const;
         bool        operator==(const BitSet& rhs) const;
 
         void        operator&=(const BitSet& rhs);
         void        operator|=(const BitSet& rhs);
         void        operator^=(const BitSet& rhs);
+
+        void        operator<<=(unsigned shift);
+        void        operator>>=(unsigned shift);
 
         bool        isSubsetOf(const BitSet& set) const;
         bool        intersects(const BitSet& set) const;
@@ -76,6 +80,26 @@ namespace eigen
         }
     }
 
+    template<int N> void BitSet<N>::operator<<=(unsigned shift)
+    {
+        for (unsigned i = Parts-1; i > 0; i--)
+        {
+            _parts[i] |= _parts[i-1] >> (64 - shift);
+            _parts[i] <<= shift;
+        }
+        _parts[0] <<= shift;
+    }
+
+    template<int N> void BitSet<N>::operator>>=(unsigned shift)
+    {
+        for (unsigned i = 0; i < Parts-1; i++)
+        {
+            _parts[i] >>= shift;
+            _parts[i] |= _parts[i+1] << (64 - shift);
+        }
+        _parts[Parts-1] >>= shift;
+    }
+
     template<int N> bool BitSet<N>::isSubsetOf(const BitSet& other) const
     {
         for (unsigned i = 0; i < Parts; i++)
@@ -122,4 +146,15 @@ namespace eigen
         }
     }
 
+    template<int N> bool BitSet<N>::isEmpty() const
+    {
+        for (unsigned i = 0; i < Parts; i++)
+        {
+            if (_parts[i] != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }

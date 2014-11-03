@@ -7,10 +7,12 @@ namespace eigen
     Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
         : _next(nullptr)
         , _renderer(renderer)
-        , _portSet(plan->_portSet)
+        , _ports(plan->_ports)
         , _buffer(0)
         , _bufferEnd(0)
     {
+        memcpy(_sortMasks, plan->_sortMasks, sizeof(_sortMasks));
+
         // copy the plan into scratch memory
         _stages = (Stage*)renderer->scratchAlloc((char*)plan->_end - (char*)plan->_start);
         assert(_stages != nullptr); // out of scratch memory
@@ -24,7 +26,7 @@ namespace eigen
     {
         // Batch is ignored if the pipeline doesn't listen to this port
 
-        if (!port->getBit().intersects(_portSet))
+        if (!port->getBit().intersects(_ports))
         {
             return;
         }
@@ -51,8 +53,8 @@ namespace eigen
         _buffer += bytes;
 
         item->next      = nullptr;
-        item->port      = port;
         item->sortDepth = sortDepth;
+        item->performanceSortKey = 0;//batch->shaderId
 
         // Commit batch to list
 
@@ -65,7 +67,7 @@ namespace eigen
 
     void Worklist::finish()
     {
-        _portSet.clear();
+        _ports.clear();
         _renderer = nullptr;
     }
 

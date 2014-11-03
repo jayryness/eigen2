@@ -3,21 +3,19 @@
 namespace eigen
 {
     class Worklist;
+    class Renderer;
 
-    struct WorkCoordinator
+    class WorkCoordinator
     {
-                            WorkCoordinator(Worklist* head);
+    public:
+                            WorkCoordinator() {}
+                            WorkCoordinator(Renderer& renderer, Worklist* head);
 
         void                operator()();
 
-        Worklist*           _head;
+        Worklist*           _head = nullptr;
 
     };
-
-    inline WorkCoordinator::WorkCoordinator(Worklist* head)
-        : _head(head)
-    {
-    }
 
     inline void WorkCoordinator::operator()()
     {

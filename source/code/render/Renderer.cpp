@@ -23,6 +23,10 @@ namespace eigen
     {
         assert(_frameNumber > 0);
         // todo - stop the world
+        if (_workSubmissionThread.joinable())
+        {
+            _workSubmissionThread.join();
+        }
 
         while (_deadMeat.getCount())
         {
@@ -90,9 +94,20 @@ namespace eigen
         *tail = nullptr;
 
         // TODO: sync to submission thread
-        // retire completed worklists
+        // retire completed worklists (if necessary)
         // attach worklists
         // kick submission thread
+
+        // sync to work submission thread
+        if (_workSubmissionThread.joinable())
+        {
+            _workSubmissionThread.join();
+        }
+        // TODO this blows
+        _workSubmissionThread.~thread();
+        _workCoordinator.~WorkCoordinator();
+        new (&_workCoordinator) WorkCoordinator(*this, head);       // attach worklists
+        new(&_workSubmissionThread) std::thread(_workCoordinator);  // kick submission thread
 
         if (_scratchAllocPtr > _scratchAllocEnd)
         {
