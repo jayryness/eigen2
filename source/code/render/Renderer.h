@@ -95,10 +95,7 @@ namespace eigen
         std::atomic<int8_t*>    _scratchAllocPtr    = 0;
         int8_t*                 _scratchAllocEnd    = 0;
 
-        Worklist                _worklists[MaxWorklists];
-        unsigned                _worklistStart      = 0;
-        unsigned                _worklistEnd        = 0;
-        unsigned                _worklistEndVacant  = MaxWorklists-1;
+        Worklist*               _openWorklistHead   = nullptr;
         WorkCoordinator         _workCoordinator;
         std::thread             _workSubmissionThread;
 

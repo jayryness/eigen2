@@ -4,25 +4,38 @@
 namespace eigen
 {
 
-    Worklist::Worklist(Renderer* renderer, const RenderPlan* plan)
-        : _next(nullptr)
-        , _renderer(renderer)
-        , _ports(plan->_ports)
-        , _buffer(0)
-        , _bufferEnd(0)
+    Worklist* Worklist::Create(Renderer* renderer, const RenderPlan* plan)
     {
-        memcpy(_sortMasks, plan->_sortMasks, sizeof(_sortMasks));
+        unsigned portRangeStart, portRangeEnd;
+        plan->_ports.getRange(portRangeStart, portRangeEnd);
 
-        // copy the plan into scratch memory
-        _stages = (Stage*)renderer->scratchAlloc((char*)plan->_end - (char*)plan->_start);
-        assert(_stages != nullptr); // out of scratch memory
-        memcpy(_stages, plan->_start, (char*)plan->_end - (char*)plan->_start);
+        uintptr_t sizeOfSlots = sizeof(Slot) * (portRangeEnd - portRangeStart);
+        uintptr_t sizeOfStages = (uintptr_t)plan->_end - (uintptr_t)plan->_start;
+
+        uintptr_t bytes = sizeof(Worklist) + sizeOfSlots + sizeOfStages + ChunkSize;
+        Worklist* worklist = (Worklist*)renderer->scratchAlloc(bytes);
+        assert(worklist != nullptr); // out of scratch memory TODO
+
+        worklist->_renderer = renderer;
+        worklist->_slots = (Slot*)(worklist + 1) - portRangeStart;      // subtract start here instead of offsetting later
+        worklist->_stages = (Stage*)(worklist->_slots + portRangeEnd);
+        worklist->_buffer = (int8_t*)worklist->_stages + sizeOfStages;
+        worklist->_bufferEnd = worklist->_buffer + ChunkSize;
+        worklist->_portRangeStart = portRangeStart;
+        worklist->_portRangeEnd = portRangeEnd;
+
+        memcpy(worklist->_sortMasks, plan->_sortMasks, sizeof(worklist->_sortMasks));
+
+        // copy stages into scratch memory
+        memcpy(worklist->_stages, plan->_start, (int8_t*)plan->_end - (int8_t*)plan->_start);
 
         // clear batch slots
-        memset(_slots, 0, sizeof(_slots));
+        memset(worklist->_slots + portRangeStart, 0, sizeOfSlots);
+
+        return worklist;
     }
 
-    void Worklist::commitBatch(Batch* batch, RenderPort* port, float sortDepth)
+    void Worklist::commitBatch(Batch* batch, const RenderPort* port, float sortDepth)
     {
         // Batch is ignored if the pipeline doesn't listen to this port
 
@@ -37,15 +50,14 @@ namespace eigen
 
         if (_buffer + bytes > _bufferEnd)
         {
-            enum { chunkSize = 16 * 1024 };
-            int8_t* p = _renderer->scratchAlloc(chunkSize);
+            int8_t* p = _renderer->scratchAlloc(ChunkSize);
             if (p == nullptr)
             {
                 // error TODO
                 return;
             }
             _buffer     = p;
-            _bufferEnd  = p + chunkSize;
+            _bufferEnd  = p + ChunkSize;
             assert(_buffer + bytes <= _bufferEnd);
         }
 

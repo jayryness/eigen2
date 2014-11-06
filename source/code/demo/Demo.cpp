@@ -126,6 +126,29 @@ void Demo::run()
 {
     printf("Initializing...");
 
+    {
+        eigen::BitSet<128> mask;
+        unsigned start, end;
+        mask.getRange(start, end);
+        mask.complement();
+        mask.getRange(start, end);
+        mask.set(0, false);
+        mask.getRange(start, end);
+        mask >>= 1;
+        mask.getRange(start, end);
+        mask.complement();
+        mask.getRange(start, end);
+        mask.set(0, true);
+        mask.set(1, true);
+        mask.set(2, true);
+        mask.set(3, true);
+        mask <<= 27;
+        mask.getRange(start, end);
+        mask >>= 4;
+        mask.getRange(start, end);
+        mask.clear();
+    }
+
     init();
     RECT clientRect;
     GetClientRect(_hwnd, &clientRect);
@@ -161,12 +184,14 @@ void Demo::run()
         renderer.getPort("One");
         renderer.getPort("Two");
         renderer.getPort("Three");
-        renderer.getPort("Four");
+        port = renderer.getPort("Four");
 
         eigen::RenderPlanPtr plan = renderer.createPlan();
 
         eigen::ClearStage& clearStage = plan.ptr->addClearStage(displayTargets.ptr);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
+        eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
+        batchStage.addPort(port);
         error = plan.ptr->validate();
         if (Failed(error))
         {
@@ -208,6 +233,9 @@ void Demo::run()
             }
 
             eigen::Worklist* worklist = renderer.openWorklist(plan.ptr);
+
+            worklist->commitBatch(nullptr, port, 0.f);
+
             worklist->finish();
 
             renderer.commenceWork();

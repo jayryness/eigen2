@@ -61,53 +61,44 @@ namespace eigen
 
     Worklist* Renderer::openWorklist(RenderPlan* plan)
     {
-        bool exhausted = _worklistEnd == _worklistEndVacant;
-        bool validated = Ok(plan->validate());
-        if (exhausted || !validated)
+        if (Failed(plan->validate()))
         {
             return nullptr;
         }
 
-        Worklist* worklist = new(_worklists + _worklistEnd) Worklist(this, plan);
-        _worklistEnd = (_worklistEnd + 1) % MaxWorklists;
+        Worklist* worklist = Worklist::Create(this, plan);
+        worklist->_next = _openWorklistHead;
+        _openWorklistHead = worklist;
         return worklist;
     }
 
     void Renderer::commenceWork()
     {
         // Ensure that no worklists were left open
+        // Also reverse the open list to put it back into API order to aid debugging
 
-        Worklist* head = nullptr;
+        Worklist* head = _openWorklistHead;
         Worklist** tail = &head;
-        for (unsigned i = _worklistStart; i != _worklistEnd; i = (i+1) % MaxWorklists)
+        for (; _openWorklistHead; _openWorklistHead = _openWorklistHead->_next)
         {
-            if (_worklists[i]._renderer)
+            if (_openWorklistHead->_renderer)
             {
                 // error TODO
                 assert(false);      // must call Worklist::finish() on all open worklists before commencing work
                 return;
             }
-
-            *tail = _worklists + i;
+            *tail = _openWorklistHead;
             tail = &(*tail)->_next;
         }
         *tail = nullptr;
 
-        // TODO: sync to submission thread
-        // retire completed worklists (if necessary)
-        // attach worklists
-        // kick submission thread
-
-        // sync to work submission thread
-        if (_workSubmissionThread.joinable())
-        {
-            _workSubmissionThread.join();
-        }
-        // TODO this blows
-        _workSubmissionThread.~thread();
-        _workCoordinator.~WorkCoordinator();
-        new (&_workCoordinator) WorkCoordinator(*this, head);       // attach worklists
-        new(&_workSubmissionThread) std::thread(_workCoordinator);  // kick submission thread
+        //if (_frameNumber % 100 == 0)
+        //{
+        //    printf("Submitting frame #%d\n", _frameNumber);
+        //}
+        _workCoordinator.sync();
+        _workCoordinator.prepareWork(*this, head);
+        _workCoordinator.kick();
 
         if (_scratchAllocPtr > _scratchAllocEnd)
         {
@@ -137,8 +128,6 @@ namespace eigen
             _deadMeat.removeFirst();
         }
 
-        _worklistEndVacant = _worklistStart;
-        _worklistStart = _worklistEnd;
         _frameNumber++;
         // TODO: kick submission thread
     }

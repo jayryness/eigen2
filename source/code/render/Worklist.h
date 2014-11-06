@@ -8,14 +8,24 @@ namespace eigen
 {
 
     class Renderer;
-
     struct Batch;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Worklist
+    //
+    // Accumulates all the batches (draw calls) to be issued via a RenderPlan.
+    //
+    // Use Renderer::openWorklist() to acquire one.
+    //
+    // TODO - Is it threadsafe, or one thread per worklist and merge downsteam?
+    //
 
     class Worklist
     {
     public:
 
-        void                commitBatch(Batch* batch, RenderPort* port, float sortDepth);
+        void                commitBatch(Batch* batch, const RenderPort* port, float sortDepth);
         void                finish();
 
     protected:
@@ -37,24 +47,30 @@ namespace eigen
         struct Slot
         {
             Item*           head;   // could make this atomic
-            int             count;
+            int             count;  // and this
             SortBatch*      performanceSorted;
             SortBatch*      depthSorted;
+        };
+
+        enum
+        {
+                            ChunkSize = 16*1024,
         };
                             friend class Renderer;
                             friend class WorkCoordinator;
 
-                            Worklist() {}
-                            Worklist(Renderer* renderer, const RenderPlan* plan);
+        static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 
-        Worklist*           _next;
-        Renderer*           _renderer;
-        Stage*              _stages;
+        Worklist*           _next           = nullptr;
+        Renderer*           _renderer       = nullptr;
+        Stage*              _stages         = nullptr;
+        Slot*               _slots          = nullptr;
+        int8_t*             _buffer         = nullptr;
+        int8_t*             _bufferEnd      = nullptr;
+        unsigned            _portRangeStart = 0;
+        unsigned            _portRangeEnd   = 0;
         RenderPort::Set     _ports;
         RenderPort::Set     _sortMasks[BatchStage::SortType::Count];
-        int8_t*             _buffer;
-        int8_t*             _bufferEnd;
-        Slot                _slots[MaxRenderPorts];  // todo compare vs single slot and sort. or: it would be easy enough to condense this to only the slots of active ports for the renderplan
     };
 
 }

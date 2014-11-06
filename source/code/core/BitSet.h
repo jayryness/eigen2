@@ -12,8 +12,7 @@ namespace eigen
 
                     BitSet();
 
-        bool        isEmpty() const;
-        bool        operator==(const BitSet& rhs) const;
+        void        complement();
 
         void        operator&=(const BitSet& rhs);
         void        operator|=(const BitSet& rhs);
@@ -22,11 +21,15 @@ namespace eigen
         void        operator<<=(unsigned shift);
         void        operator>>=(unsigned shift);
 
+        bool        operator==(const BitSet& rhs) const;
+        bool        isEmpty() const;
         bool        isSubsetOf(const BitSet& set) const;
         bool        intersects(const BitSet& set) const;
 
         void        clear();
         void        set(unsigned position, bool value);
+
+        void        getRange(unsigned& start, unsigned& end) const; // [start, end)
 
     private:
 
@@ -42,6 +45,14 @@ namespace eigen
     template<int N> BitSet<N>::BitSet()
     {
         clear();
+    }
+
+    template<int N> void BitSet<N>::complement()
+    {
+        for (unsigned i = 0; i < Parts; i++)
+        {
+            _parts[i] = ~_parts[i];
+        }
     }
 
     template<int N> bool BitSet<N>::operator==(const BitSet& rhs) const
@@ -157,4 +168,58 @@ namespace eigen
         }
         return true;
     }
+
+    template<int N> void BitSet<N>::getRange(unsigned& start, unsigned& end) const
+    {
+        unsigned s = 0;
+        for (; s < Parts; s++)
+        {
+            if (_parts[s] != 0)
+            {
+                uint64_t x = _parts[s];
+                x &= -(int64_t)x;
+                start = s*64;
+                start += ((x & 0x00000000ffffffff) == 0) * 32;
+                start += ((x & 0x0000ffff0000ffff) == 0) * 16;
+                start += ((x & 0x00ff00ff00ff00ff) == 0) * 8;
+                start += ((x & 0x0f0f0f0f0f0f0f0f) == 0) * 4;
+                start += ((x & 0x3333333333333333) == 0) * 2;
+                start += ((x & 0x5555555555555555) == 0) * 1;
+                break;
+            }
+        }
+
+        if (s == Parts)
+        {
+            start = end = 0;
+            return;
+        }
+
+        for (unsigned e = Parts; e-- > 0;)
+        {
+            if (_parts[e] != 0)
+            {
+                uint64_t x = _parts[e];
+                x |= x >> 1;
+                x |= x >> 2;
+                x |= x >> 4;
+                x |= x >> 8;
+                x |= x >> 16;
+                x |= x >> 32;
+                x >>= 1;
+                x++;
+                end = e*64 + 1;
+                end += ((x & 0x00000000ffffffff) == 0) * 32;
+                end += ((x & 0x0000ffff0000ffff) == 0) * 16;
+                end += ((x & 0x00ff00ff00ff00ff) == 0) * 8;
+                end += ((x & 0x0f0f0f0f0f0f0f0f) == 0) * 4;
+                end += ((x & 0x3333333333333333) == 0) * 2;
+                end += ((x & 0x5555555555555555) == 0) * 1;
+                return;
+            }
+        }
+
+        assert(false);
+    }
+
 }

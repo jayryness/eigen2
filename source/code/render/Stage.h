@@ -81,6 +81,8 @@ namespace eigen
         };
                                 BatchStage();
 
+        void                    addPort(const RenderPort* port);
+
         RenderPort::Set         ports;
         SortType                sortType    = SortType::Performance;
     };
@@ -112,6 +114,11 @@ namespace eigen
     inline BatchStage::BatchStage()
     {
         type = Type::Batch;
+    }
+
+    inline void BatchStage::addPort(const RenderPort* port)
+    {
+        ports |= port->getBit();
     }
 
     inline FilterStage::FilterStage()
