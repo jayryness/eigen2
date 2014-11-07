@@ -30,6 +30,8 @@ namespace eigen
             Filter,
         };
 
+        Stage*                  advance() const;
+
         Type                    type    = Type::Unspecified;
         TargetSet*              targets = nullptr;
 
@@ -126,4 +128,14 @@ namespace eigen
         type = Type::Filter;
     }
 
+    inline Stage* Stage::advance() const
+    {
+        switch (type)
+        {
+        case Type::Clear:   return (ClearStage*)this + 1;
+        case Type::Batch:   return (BatchStage*)this + 1;
+        case Type::Filter:  return (FilterStage*)this + 1;
+        }
+        return nullptr;
+    }
 }

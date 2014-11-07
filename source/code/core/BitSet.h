@@ -30,6 +30,7 @@ namespace eigen
         void        set(unsigned position, bool value);
 
         void        getRange(unsigned& start, unsigned& end) const; // [start, end)
+        unsigned    hash() const;
 
     private:
 
@@ -222,4 +223,24 @@ namespace eigen
         assert(false);
     }
 
+    template<int N> unsigned BitSet<N>::hash() const
+    {
+        // Murmur2-64
+        enum : uint64_t { m = 0xc6a4a7935bd1e995 };
+        enum { r = 47 };
+        uint64_t h = Parts*8 + 761110;
+
+        for (unsigned i = 0; i < Parts; i++)
+        {
+            uint64_t k = _parts[i] * m;
+            k ^= k >> r;
+            k *= m;
+            h = ( h * m ) ^ k;
+        }
+        h ^= h >> r;
+        h *= m;
+        h ^= h >> r;
+
+        return (unsigned)(sizeof(unsigned) < 8 ? (h >> 32) : h);
+    }
 }

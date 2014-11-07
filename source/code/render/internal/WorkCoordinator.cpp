@@ -28,8 +28,10 @@ namespace eigen
     struct WorkCoordinator::SortJob
     {
         SortJob*                next            = nullptr;
+        Worklist*               worklist;
+        RenderPort::Set         portSet;
         unsigned                count;
-        Worklist::SortBatch*    batches;
+        Worklist::SortBatch*    depthSortedBatches;
         BatchStage::SortType    sortType;
     };
 
@@ -84,15 +86,15 @@ namespace eigen
         {
             RenderPort::Set portBit;
             portBit.set(cur->_portRangeStart, true);
-            for (unsigned portIndex = cur->_portRangeStart; portIndex < cur->_portRangeEnd; portIndex++,portBit<<=1)
+            for (unsigned portIndex = cur->_portRangeStart; portIndex < cur->_portRangeEnd; portIndex++, portBit <<= 1)
             {
                 Worklist::Slot* slot = cur->_slots + portIndex;
                 if (slot->count == 0)
                     continue;
 
-                bool performanceSort    = portBit.intersects(cur->_sortMasks[BatchStage::SortType::Performance]);
-                bool depthSort          = portBit.intersects(cur->_sortMasks[BatchStage::SortType::IncreasingDepth]);
-                depthSort              |= portBit.intersects(cur->_sortMasks[BatchStage::SortType::DecreasingDepth]);
+                bool performanceSort = portBit.intersects(cur->_sortMasks[BatchStage::SortType::Performance]);
+                bool depthSort = portBit.intersects(cur->_sortMasks[BatchStage::SortType::IncreasingDepth]);
+                depthSort |= portBit.intersects(cur->_sortMasks[BatchStage::SortType::DecreasingDepth]);
 
                 unsigned bytes = /*sizeof(SortJob) + */sizeof(Worklist::SortBatch) * slot->count;
                 if (performanceSort)
@@ -106,17 +108,17 @@ namespace eigen
                     //sortJobTail = &sortJob->next;
                     slot->performanceSorted = (Worklist::SortBatch*)renderer.scratchAlloc(bytes);
                 }
+            }
 
-                if (depthSort)
+            for (Stage* stage = cur->_stages; stage < cur->_stagesEnd; stage = stage->advance())
+            {
+                if (stage->type == Stage::Type::Batch)
                 {
-                    //SortJob* sortJob = (SortJob*)renderer.scratchAlloc(bytes);
-                    //sortJob->batches = (Worklist::SortBatch*)(sortJob + 1);
-                    //sortJob->count = slot->count;
-                    //sortJob->sortType = BatchStage::SortType::IncreasingDepth;
-
-                    //*sortJobTail = sortJob;
-                    //sortJobTail = &sortJob->next;
-                    slot->depthSorted = (Worklist::SortBatch*)renderer.scratchAlloc(bytes);
+                    BatchStage* batchStage = (BatchStage*)stage;
+                    if (batchStage->sortType == BatchStage::SortType::DecreasingDepth || batchStage->sortType == BatchStage::SortType::IncreasingDepth)
+                    {
+                        // depth sort job
+                    }
                 }
             }
         }

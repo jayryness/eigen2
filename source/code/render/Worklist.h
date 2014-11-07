@@ -49,7 +49,6 @@ namespace eigen
             Item*           head;   // could make this atomic
             int             count;  // and this
             SortBatch*      performanceSorted;
-            SortBatch*      depthSorted;
         };
 
         enum
@@ -64,6 +63,7 @@ namespace eigen
         Worklist*           _next           = nullptr;
         Renderer*           _renderer       = nullptr;
         Stage*              _stages         = nullptr;
+        Stage*              _stagesEnd      = nullptr;
         Slot*               _slots          = nullptr;
         int8_t*             _buffer         = nullptr;
         int8_t*             _bufferEnd      = nullptr;

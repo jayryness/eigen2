@@ -19,6 +19,7 @@ namespace eigen
         worklist->_renderer = renderer;
         worklist->_slots = (Slot*)(worklist + 1) - portRangeStart;      // subtract start here instead of offsetting later
         worklist->_stages = (Stage*)(worklist->_slots + portRangeEnd);
+        worklist->_stagesEnd = (Stage*)((int8_t*)worklist->_stages + sizeOfStages);
         worklist->_buffer = (int8_t*)worklist->_stages + sizeOfStages;
         worklist->_bufferEnd = worklist->_buffer + ChunkSize;
         worklist->_portRangeStart = portRangeStart;

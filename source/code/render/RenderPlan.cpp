@@ -3,21 +3,9 @@
 
 namespace eigen
 {
-    inline Stage* NextStage(Stage* prev)
+    inline unsigned SizeFrom(Stage* stage)
     {
-        switch (prev->type)
-        {
-        case Stage::Type::Clear:    return (ClearStage*)prev + 1;
-        case Stage::Type::Batch:    return (BatchStage*)prev + 1;
-        case Stage::Type::Filter:   return (FilterStage*)prev + 1;
-        }
-        assert(false);
-        return nullptr;
-    }
-
-    inline unsigned SizeFrom(Stage::Type stageType)
-    {
-        return (unsigned)NextStage(nullptr);
+        return (unsigned)((uint8_t*)stage->advance() - (uint8_t*)stage);
     }
 
     inline const char* AsString(Stage::Type stageType)
@@ -39,7 +27,7 @@ namespace eigen
     {
         if (--Allocation::From(_start)->_metadataInt == 0)
         {
-            for (Stage* stage = _start; stage < _end; stage = NextStage(stage))
+            for (Stage* stage = _start; stage < _end; stage = stage->advance())
             {
                 ReleaseRef(stage->targets);
             }
@@ -60,8 +48,8 @@ namespace eigen
         unsigned bytes = 0;
         for (unsigned i = 0; i < stageCount; i++)
         {
-            unsigned size = SizeFrom(stages[i]->type);
-            if (size == 0)
+            unsigned size = SizeFrom(stages[i]);
+            if (stages[i]->advance() == nullptr)
             {
                 EIGEN_RETURN_ERROR("Invalid stage type at location %d", (long)i);
             }
@@ -91,7 +79,7 @@ namespace eigen
 
         for (unsigned i = 0; i < stageCount; i++)
         {
-            Stage* next = NextStage(_end);
+            Stage* next = _end->advance();
             memcpy(_end, stages[i], (char*)next - (char*)_end);
             AddRef(_end->targets);
             _end = next;
@@ -162,7 +150,7 @@ namespace eigen
                 _sortMasks[stage->sortType] |= stage->ports;
             }
 
-            _validated = NextStage(_validated);
+            _validated = _validated->advance();
         }
 
         EIGEN_RETURN_OK();
