@@ -7,6 +7,7 @@ namespace eigen
 {
     class Worklist;
     class Renderer;
+    struct BatchStage;
 
     class WorkCoordinator
     {
@@ -28,19 +29,13 @@ namespace eigen
                                     struct SortJob;
                                     struct StageJob;
 
-        enum                        { SortCacheSize = StaticNextPow2<MaxRenderPorts>::Result };
-
-        struct SortCacheEntry
-        {
-            unsigned                hash;
-            unsigned                index;
-        };
-
         void                        thread();
+        void                        addSortJob(Renderer& renderer, Worklist* worklist, BatchStage* batchStage, SortJob**& tail);
 
         Worklist*                   _head = nullptr;
 
-        SortCacheEntry              _depthSortCache[SortCacheSize];
+        //PodArray<SortCacheEntry>    _sortCache;
+        //unsigned                    _sortCacheMask  = SortCacheSize;
 
         SortJob*                    _sortJobs;
         StageJob*                   _stageJobs;

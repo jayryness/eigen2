@@ -27,20 +27,20 @@ namespace eigen
 
     struct WorkCoordinator::SortJob
     {
-        SortJob*                next            = nullptr;
+        SortJob*                next;
         Worklist*               worklist;
-        RenderPort::Set         portSet;
-        unsigned                count;
-        Worklist::SortBatch*    depthSortedBatches;
         BatchStage::SortType    sortType;
+        Worklist::CachedSort    cachedSort;
+
+        void execute();
     };
 
     struct WorkCoordinator::StageJob
     {
-        StageJob*               next            = nullptr;
+        StageJob*               next;
         Stage*                  stage;
         unsigned                count;
-        Worklist::SortBatch*    sortedBatches   = nullptr;
+        SortJob*                sortJob;
     };
 
     WorkCoordinator::WorkCoordinator()
@@ -72,56 +72,129 @@ namespace eigen
         _head = nullptr;
     }
 
+    void WorkCoordinator::addSortJob(Renderer& renderer, Worklist* worklist, BatchStage* batchStage, SortJob**& tail)
+    {
+        if (batchStage->sortType == BatchStage::SortType::Performance)
+        {
+            // For performance sort, slots are sorted individually, so multiple sort jobs are created
+
+            unsigned cur, end;
+            batchStage->ports.getRange(cur, end);
+            RenderPort::Set curBit = batchStage->ports;
+            curBit.clearExceptLsb();
+
+            for (; cur < end; cur++, curBit<<=1)
+            {
+                if (!curBit.intersects(batchStage->ports) || !worklist->_slots[cur].count)
+                    continue;
+
+                unsigned hash = curBit.hash();
+
+                hash ^= 0xabcdef12; // Ok, this sucks. Need to discriminate perf sort jobs from depth sort jobs. Whole system needs refactor TODO
+
+                Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedSort(hash);
+                if (sortCacheEntry.cached == nullptr)
+                {
+                    unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * worklist->_slots[cur].count;
+                    SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
+
+                    job->next = nullptr;
+                    job->sortType = BatchStage::SortType::Performance;
+                    job->worklist = worklist;
+                    job->cachedSort.count = worklist->_slots[cur].count;
+                    job->cachedSort.ports = curBit;
+                    job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
+
+                    sortCacheEntry.cached = &job->cachedSort;
+
+                    *tail = job;
+                    tail = &job->next;
+                }
+                assert(sortCacheEntry.cached->ports == curBit && sortCacheEntry.cached->count == worklist->_slots[cur].count);
+            }
+        }
+        else if (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth)
+        {
+            // For depth sort, all participating slots are merged and sorted in one big array/job
+
+            unsigned cur, end;
+            batchStage->ports.getRange(cur, end);
+            RenderPort::Set curBit = batchStage->ports;
+            curBit.clearExceptLsb();
+
+            unsigned count = 0;
+            for (; cur < end; cur++, curBit <<= 1)
+            {
+                if (curBit.intersects(batchStage->ports))
+                    count += worklist->_slots[cur].count;
+            }
+
+            if (count == 0)
+                return;
+
+            unsigned hash = batchStage->ports.hash();
+            Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedSort(hash);
+            if (sortCacheEntry.cached == nullptr)
+            {
+                unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
+                SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
+
+                job->next = nullptr;
+                job->sortType = BatchStage::SortType::IncreasingDepth;  // decreasing depth is handled by submitting the batches back to front
+                job->worklist = worklist;
+                job->cachedSort.count = count;
+                job->cachedSort.ports = batchStage->ports;
+                job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
+
+                sortCacheEntry.cached = &job->cachedSort;
+
+                *tail = job;
+                tail = &job->next;
+            }
+            assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
+        }
+        else
+        {
+            assert(false);
+        }
+    }
+
     void WorkCoordinator::prepareWork(Renderer& renderer, Worklist* head)
     {
         assert(_head == nullptr);
         _head = head;
 
-        // Allocate memory for all the sorts
+        // Create sort jobs
 
         _sortJobs = nullptr;
         SortJob** sortJobTail = &_sortJobs;
 
-        for (Worklist* cur = _head; cur; cur = cur->_next)
+        for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
         {
-            RenderPort::Set portBit;
-            portBit.set(cur->_portRangeStart, true);
-            for (unsigned portIndex = cur->_portRangeStart; portIndex < cur->_portRangeEnd; portIndex++, portBit <<= 1)
-            {
-                Worklist::Slot* slot = cur->_slots + portIndex;
-                if (slot->count == 0)
-                    continue;
-
-                bool performanceSort = portBit.intersects(cur->_sortMasks[BatchStage::SortType::Performance]);
-                bool depthSort = portBit.intersects(cur->_sortMasks[BatchStage::SortType::IncreasingDepth]);
-                depthSort |= portBit.intersects(cur->_sortMasks[BatchStage::SortType::DecreasingDepth]);
-
-                unsigned bytes = /*sizeof(SortJob) + */sizeof(Worklist::SortBatch) * slot->count;
-                if (performanceSort)
-                {
-                    //SortJob* sortJob = (SortJob*)renderer.scratchAlloc(bytes);
-                    //sortJob->batches = (Worklist::SortBatch*)(sortJob + 1);
-                    //sortJob->count = slot->count;
-                    //sortJob->sortType = BatchStage::SortType::Performance;
-
-                    //*sortJobTail = sortJob;
-                    //sortJobTail = &sortJob->next;
-                    slot->performanceSorted = (Worklist::SortBatch*)renderer.scratchAlloc(bytes);
-                }
-            }
-
-            for (Stage* stage = cur->_stages; stage < cur->_stagesEnd; stage = stage->advance())
+            Stage* stage = worklist->_stages;
+            for (unsigned count = worklist->_stagesCount; count > 0; count--)
             {
                 if (stage->type == Stage::Type::Batch)
                 {
                     BatchStage* batchStage = (BatchStage*)stage;
-                    if (batchStage->sortType == BatchStage::SortType::DecreasingDepth || batchStage->sortType == BatchStage::SortType::IncreasingDepth)
-                    {
-                        // depth sort job
-                    }
+                    addSortJob(renderer, worklist, batchStage, sortJobTail);
                 }
+                stage = stage->advance();
             }
         }
+
+        // Issue sort jobs
+
+        // TODO no concurrent sort job issuing yet
+        for (SortJob* job = _sortJobs; job; job = job->next)
+        {
+            job->execute();
+        }
+
+        // Wait for sort jobs to finish
+
+        // Issue batches
+
     }
 
     void WorkCoordinator::kick()
@@ -142,6 +215,45 @@ namespace eigen
         kick();
 
         asyncDetails.thread.join();
+    }
+
+    void WorkCoordinator::SortJob::execute()
+    {
+        assert(cachedSort.count > 0);
+
+        unsigned cur, end;
+        cachedSort.ports.getRange(cur, end);
+        RenderPort::Set curBit = cachedSort.ports;
+        curBit.clearExceptLsb();
+
+        unsigned count = 0;
+        // Copy batches from slots into sort array
+        for (; cur < end; cur++, curBit <<= 1)
+        {
+            if (curBit.intersects(cachedSort.ports))
+            {
+                Worklist::Item* item = worklist->_slots[cur].head;
+                for (; item; item = item->next)
+                {
+                    assert(count < cachedSort.count);
+                    if (sortType == BatchStage::SortType::Performance)
+                    {
+                        cachedSort.batches[count].sortKey = item->performanceSortKey;
+                    }
+                    else
+                    {
+                        cachedSort.batches[count].sortKey = 0;
+                        (float&)cachedSort.batches[count].sortKey = item->sortDepth;
+                    }
+                    //cachedSort.batches[count].batch = &item->batch;   TODO
+                    cachedSort.batches[count].batch = nullptr;
+                    count++;
+                }
+            }
+        }
+        assert(count == cachedSort.count);
+
+        std::sort(cachedSort.batches, cachedSort.batches + count);
     }
 
 }

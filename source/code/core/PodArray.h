@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Allocator.h"
+#include "memory.h"
 
 namespace eigen
 {
@@ -17,7 +17,10 @@ namespace eigen
     public:
 
                         PodArray(Allocator* allocator, unsigned initialCapacity);
+                        PodArray();
                        ~PodArray();
+
+        void            initialize(Allocator* allocator, unsigned initialCapacity);
 
                         template<typename T_INDEX>
         T&              at(T_INDEX);
@@ -32,9 +35,10 @@ namespace eigen
         void            removeLast();
 
         void            setCount(unsigned count);
-        unsigned        getCount();
+        unsigned        getCount() const;
 
         void            reserve(unsigned capacity, bool exact=true);
+        unsigned        getCapacity() const;
 
     private:
 
@@ -48,13 +52,23 @@ namespace eigen
 
     template<typename T> PodArray<T>::PodArray(Allocator* allocator, unsigned initialCapacity)
     {
-        _elements = Allocation::AllocateMemory<T>(initialCapacity);
-        _capacity = initialCapacity;
+        initialize(allcoator, initialCapacity);
+    }
+
+    template<typename T> PodArray<T>::PodArray()
+    {
     }
 
     template<typename T> PodArray<T>::~PodArray()
     {
         Allocation::FreeMemory(_elements);
+    }
+
+    template<typename T> void PodArray<T>::initialize(Allocator* allocator, unsigned initialCapacity)
+    {
+        assert(_elements == nullptr);   // already initialized
+        _elements = Allocation::AllocateMemory<T>(initialCapacity);
+        _capacity = initialCapacity;
     }
 
     template<typename T> template<typename T_INDEX> T& PodArray<T>::at(T_INDEX index)
@@ -92,7 +106,7 @@ namespace eigen
         _count = count;
     }
 
-    template<typename T> unsigned PodArray<T>::getCount()
+    template<typename T> unsigned PodArray<T>::getCount() const
     {
         return _count;
     }
@@ -111,6 +125,11 @@ namespace eigen
             _elements = elements;
             _capacity = capacity;
         }
+    }
+
+    template<typename T> unsigned PodArray<T>::getCapacity() const
+    {
+        return _capacity;
     }
 
 }

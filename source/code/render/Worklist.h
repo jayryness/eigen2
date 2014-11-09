@@ -42,13 +42,28 @@ namespace eigen
         {
             uint64_t        sortKey;
             Batch*          batch;
+
+            bool            operator<(const SortBatch& other) const;
         };
 
         struct Slot
         {
             Item*           head;   // could make this atomic
             int             count;  // and this
-            SortBatch*      performanceSorted;
+            //SortBatch*      performanceSorted;
+        };
+
+        struct CachedSort
+        {
+            RenderPort::Set ports;
+            SortBatch*      batches;
+            unsigned        count;
+        };
+
+        struct SortCacheEntry
+        {
+            unsigned        hash;
+            CachedSort*     cached;
         };
 
         enum
@@ -60,17 +75,37 @@ namespace eigen
 
         static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 
+        SortCacheEntry&     findCachedSort(unsigned hash) const; 
+
         Worklist*           _next           = nullptr;
         Renderer*           _renderer       = nullptr;
         Stage*              _stages         = nullptr;
-        Stage*              _stagesEnd      = nullptr;
         Slot*               _slots          = nullptr;
         int8_t*             _buffer         = nullptr;
         int8_t*             _bufferEnd      = nullptr;
+        SortCacheEntry*     _sortCache      = nullptr;
+        RenderPort::Set     _ports;
+        unsigned            _stagesCount    = 0;
+        unsigned            _sortCacheMask  = 0;
         unsigned            _portRangeStart = 0;
         unsigned            _portRangeEnd   = 0;
-        RenderPort::Set     _ports;
-        RenderPort::Set     _sortMasks[BatchStage::SortType::Count];
     };
+
+    inline Worklist::SortCacheEntry& Worklist::findCachedSort(unsigned hash) const
+    {
+        for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
+        {
+            if (_sortCache[i].hash == 0 || _sortCache[i].hash == hash)
+            {
+                _sortCache[i].hash = hash;
+                return _sortCache[i];
+            }
+        }
+    }
+
+    inline bool Worklist::SortBatch::operator<(const SortBatch& other) const
+    {
+        return sortKey < other.sortKey;
+    }
 
 }

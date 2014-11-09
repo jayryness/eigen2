@@ -9,29 +9,43 @@ namespace eigen
         unsigned portRangeStart, portRangeEnd;
         plan->_ports.getRange(portRangeStart, portRangeEnd);
 
+        unsigned sortCacheMask = std::max(plan->_count, portRangeEnd - portRangeStart);
+        sortCacheMask *= 2;
+        assert(sortCacheMask < 0x10000);
+        sortCacheMask |= sortCacheMask >> 1;
+        sortCacheMask |= sortCacheMask >> 2;
+        sortCacheMask |= sortCacheMask >> 4;
+        sortCacheMask |= sortCacheMask >> 8;
+
         uintptr_t sizeOfSlots = sizeof(Slot) * (portRangeEnd - portRangeStart);
         uintptr_t sizeOfStages = (uintptr_t)plan->_end - (uintptr_t)plan->_start;
+        uintptr_t sizeOfSortCache = sizeof(SortCacheEntry) * (sortCacheMask+1);
 
-        uintptr_t bytes = sizeof(Worklist) + sizeOfSlots + sizeOfStages + ChunkSize;
+        uintptr_t bytes = sizeof(Worklist) + sizeOfSlots + sizeOfStages + sizeOfSortCache + ChunkSize;
         Worklist* worklist = (Worklist*)renderer->scratchAlloc(bytes);
         assert(worklist != nullptr); // out of scratch memory TODO
 
         worklist->_renderer = renderer;
         worklist->_slots = (Slot*)(worklist + 1) - portRangeStart;      // subtract start here instead of offsetting later
         worklist->_stages = (Stage*)(worklist->_slots + portRangeEnd);
-        worklist->_stagesEnd = (Stage*)((int8_t*)worklist->_stages + sizeOfStages);
-        worklist->_buffer = (int8_t*)worklist->_stages + sizeOfStages;
+        worklist->_stagesCount = plan->_count;
+        worklist->_sortCache = (SortCacheEntry*)((int8_t*)worklist->_stages + sizeOfStages);
+        worklist->_sortCacheMask = sortCacheMask;
+        worklist->_buffer = (int8_t*)worklist->_sortCache + sizeOfSortCache;
         worklist->_bufferEnd = worklist->_buffer + ChunkSize;
         worklist->_portRangeStart = portRangeStart;
         worklist->_portRangeEnd = portRangeEnd;
 
-        memcpy(worklist->_sortMasks, plan->_sortMasks, sizeof(worklist->_sortMasks));
+        //memcpy(worklist->_sortMasks, plan->_sortMasks, sizeof(worklist->_sortMasks));
 
         // copy stages into scratch memory
         memcpy(worklist->_stages, plan->_start, (int8_t*)plan->_end - (int8_t*)plan->_start);
 
         // clear batch slots
         memset(worklist->_slots + portRangeStart, 0, sizeOfSlots);
+
+        // clear sort cache
+        memset(worklist->_sortCache, 0, sizeOfSortCache);
 
         return worklist;
     }

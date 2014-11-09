@@ -12,8 +12,6 @@ namespace eigen
 
                     BitSet();
 
-        void        complement();
-
         void        operator&=(const BitSet& rhs);
         void        operator|=(const BitSet& rhs);
         void        operator^=(const BitSet& rhs);
@@ -28,6 +26,8 @@ namespace eigen
 
         void        clear();
         void        set(unsigned position, bool value);
+        void        complement();
+        void        clearExceptLsb();
 
         void        getRange(unsigned& start, unsigned& end) const; // [start, end)
         unsigned    hash() const;
@@ -155,6 +155,25 @@ namespace eigen
         else
         {
             _parts[i] &= ~(1LL << position);
+        }
+    }
+
+    template<int N> void BitSet<N>::clearExceptLsb()
+    {
+        for (unsigned i = 0; i < Parts; i++)
+        {
+            if (_parts[i] != 0)
+            {
+                _parts[i] &= -(int64_t)_parts[i];
+
+                i++;
+                for (; i < Parts; i++)
+                {
+                    _parts[i] = 0;
+                }
+
+                break;
+            }
         }
     }
 

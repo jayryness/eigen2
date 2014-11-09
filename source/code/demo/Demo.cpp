@@ -201,8 +201,21 @@ void Demo::run()
 
         eigen::ClearStage& clearStage = plan.ptr->addClearStage(displayTargets.ptr);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
-        eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
-        batchStage.addPort(port);
+        {
+            eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
+            batchStage.addPort(port);
+        }
+        {
+            eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
+            batchStage.sortType = eigen::BatchStage::SortType::IncreasingDepth;
+            batchStage.addPort(port);
+        }
+        {
+            eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
+            batchStage.sortType = eigen::BatchStage::SortType::DecreasingDepth;
+            batchStage.addPort(port);
+            batchStage.addPort(renderer.getPort("Foo"));
+        }
         error = plan.ptr->validate();
         if (Failed(error))
         {

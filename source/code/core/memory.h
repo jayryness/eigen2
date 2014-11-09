@@ -7,10 +7,14 @@
 namespace eigen
 {
 
-    template<class T_STRUCT, class T_MEMBER> T_STRUCT* StructFromMember(T_MEMBER T_STRUCT::*ptrToMember, T_MEMBER* member)
-    {
-        return (T_STRUCT*)((char*)member - offsetof(T_STRUCT, *ptrToMember));
-    }
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Functions
+    //
+
+    // StructFromMember - Get pointer to struct from pointer to member
+
+    template<class T_STRUCT, class T_MEMBER> T_STRUCT* StructFromMember(T_MEMBER T_STRUCT::*ptrToMember, T_MEMBER* member);
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -115,6 +119,11 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class T_STRUCT, class T_MEMBER> T_STRUCT* StructFromMember(T_MEMBER T_STRUCT::*ptrToMember, T_MEMBER* member)
+    {
+        return (T_STRUCT*)((char*)member - offsetof(T_STRUCT, *ptrToMember));
+    }
 
     inline Allocation* Allocation::From(void* memory)
     {
