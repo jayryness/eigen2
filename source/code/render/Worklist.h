@@ -38,9 +38,9 @@ namespace eigen
 
     protected:
 
-        struct Item
+        struct BatchListEntry
         {
-            Item*           next;
+            BatchListEntry* next;
             float           sortDepth;
             unsigned        performanceSortKey;
             //Batch         batch;    // shallow copy, variable # of paramblocks follow in memory
@@ -54,9 +54,9 @@ namespace eigen
             bool            operator<(const SortBatch& other) const;
         };
 
-        struct Slot
+        struct BatchList
         {
-            Item*           head;   // could make this atomic
+            BatchListEntry* head;   // could make this atomic
             int             count;  // and this
         };
 
@@ -88,7 +88,7 @@ namespace eigen
         Worklist*           _next               = nullptr;
         Renderer*           _renderer           = nullptr;
         Stage*              _stages             = nullptr;
-        Slot*               _slots              = nullptr;
+        BatchList*          _batchLists         = nullptr;
         int8_t*             _buffer             = nullptr;
         int8_t*             _bufferEnd          = nullptr;
         SortCacheEntry*     _perfSortCache      = nullptr;

@@ -17,18 +17,18 @@ namespace eigen
         depthSortCacheMask |= depthSortCacheMask >> 4;
         depthSortCacheMask |= depthSortCacheMask >> 8;
 
-        uintptr_t sizeOfSlots = sizeof(Slot) * (portRangeEnd - portRangeStart);
+        uintptr_t sizeOfBatchLists = sizeof(BatchList) * (portRangeEnd - portRangeStart);
         uintptr_t sizeOfStages = (uintptr_t)plan->_end - (uintptr_t)plan->_start;
         uintptr_t sizeOfPerfSortCache = sizeof(SortCacheEntry) * (portRangeEnd - portRangeStart);
         uintptr_t sizeOfDepthSortCache = sizeof(SortCacheEntry) * (depthSortCacheMask+1);
 
-        uintptr_t bytes = sizeof(Worklist) + sizeOfSlots + sizeOfStages + sizeOfPerfSortCache + sizeOfDepthSortCache + ChunkSize;
+        uintptr_t bytes = sizeof(Worklist) + sizeOfBatchLists + sizeOfStages + sizeOfPerfSortCache + sizeOfDepthSortCache + ChunkSize;
         Worklist* worklist = (Worklist*)renderer->scratchAlloc(bytes);
         assert(worklist != nullptr); // out of scratch memory TODO
 
         worklist->_renderer = renderer;
-        worklist->_slots = (Slot*)(worklist + 1) - portRangeStart;      // subtract start here instead of offsetting later
-        worklist->_stages = (Stage*)(worklist->_slots + portRangeEnd);
+        worklist->_batchLists = (BatchList*)(worklist + 1) - portRangeStart;    // subtract start here instead of offsetting later
+        worklist->_stages = (Stage*)(worklist->_batchLists + portRangeEnd);
         worklist->_stagesCount = plan->_count;
         worklist->_perfSortCache = (SortCacheEntry*)((int8_t*)worklist->_stages + sizeOfStages) - portRangeStart;
         worklist->_depthSortCache = worklist->_perfSortCache + portRangeEnd;
@@ -44,7 +44,7 @@ namespace eigen
         memcpy(worklist->_stages, plan->_start, (int8_t*)plan->_end - (int8_t*)plan->_start);
 
         // clear batch slots
-        memset(worklist->_slots + portRangeStart, 0, sizeOfSlots);
+        memset(worklist->_batchLists + portRangeStart, 0, sizeOfBatchLists);
 
         // clear sort caches
         memset(worklist->_perfSortCache + portRangeStart, 0, sizeOfPerfSortCache);
@@ -64,7 +64,7 @@ namespace eigen
 
         // Create committed batch in scratch memory
 
-        unsigned bytes = sizeof(Item);// + dataCount*sizeof(StructData*);
+        unsigned bytes = sizeof(BatchListEntry);// + dataCount*sizeof(StructData*);
 
         if (_buffer + bytes > _bufferEnd)
         {
@@ -79,20 +79,20 @@ namespace eigen
             assert(_buffer + bytes <= _bufferEnd);
         }
 
-        Item* item = (Item*)_buffer;
+        BatchListEntry* entry = (BatchListEntry*)_buffer;
         _buffer += bytes;
 
-        item->next      = nullptr;
-        item->sortDepth = sortDepth;
-        item->performanceSortKey = 0;//batch->shaderId
+        entry->next                 = nullptr;
+        entry->sortDepth            = sortDepth;
+        entry->performanceSortKey   = 0;//batch->shaderId
 
         // Commit batch to list
 
-        Slot& slot = _slots[port->getIndex()];
-        //item->next = slot.head.exchange(item, std::memory_order_relaxed);  // [cb->next = head; head = cb;]
-        item->next = slot.head;
-        slot.head = item;
-        slot.count++;
+        BatchList& batchList = _batchLists[port->getIndex()];
+        //entry->next = batchList.head.exchange(entry, std::memory_order_relaxed);  // [cb->next = head; head = cb;]
+        entry->next = batchList.head;
+        batchList.head = entry;
+        batchList.count++;
     }
 
     void Worklist::finish()

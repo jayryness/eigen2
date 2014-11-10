@@ -30,7 +30,8 @@ namespace eigen
                                     struct StageJob;
 
         void                        thread();
-        void                        addSortJob(Renderer& renderer, Worklist* worklist, BatchStage* batchStage, SortJob**& tail);
+        void                        addSortJobs(Renderer& renderer, Worklist* worklist, SortJob**& tail);
+        SortJob*                    createSortJob(Renderer& renderer, Worklist* worklist, unsigned count);
 
         Worklist*                   _head = nullptr;
 

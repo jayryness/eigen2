@@ -102,13 +102,13 @@ namespace eigen
                 batchStage->ports.forEach(
                     [&](unsigned portIndex, const RenderPort::Set& portBit)
                     {
-                        if (worklist->_slots[portIndex].count == 0)
+                        if (worklist->_batchLists[portIndex].count == 0)
                             return;
 
                         Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedPerfSort(portIndex);
                         if (sortCacheEntry.cached == nullptr)
                         {
-                            SortJob* job = createSortJob(renderer, worklist, worklist->_slots[portIndex].count);
+                            SortJob* job = createSortJob(renderer, worklist, worklist->_batchLists[portIndex].count);
                             job->sortType = BatchStage::SortType::Performance;
                             job->cachedSort.ports = portBit;
 
@@ -117,7 +117,7 @@ namespace eigen
                             *tail = job;
                             tail = &job->next;
                         }
-                        assert(sortCacheEntry.cached->ports == portBit && sortCacheEntry.cached->count == worklist->_slots[portIndex].count);
+                        assert(sortCacheEntry.cached->ports == portBit && sortCacheEntry.cached->count == worklist->_batchLists[portIndex].count);
                     }
                 );
             }
@@ -129,7 +129,7 @@ namespace eigen
                 batchStage->ports.forEach(
                     [&](unsigned portIndex, const RenderPort::Set& portBit)
                     {
-                        count += worklist->_slots[portIndex].count;
+                        count += worklist->_batchLists[portIndex].count;
                     }
                 );
 
@@ -216,18 +216,18 @@ namespace eigen
         cachedSort.ports.forEach(
             [&](unsigned index, const RenderPort::Set&)
             {
-                Worklist::Item* item = worklist->_slots[index].head;
-                for (; item; item = item->next)
+                Worklist::BatchListEntry* entry = worklist->_batchLists[index].head;
+                for (; entry; entry = entry->next)
                 {
                     assert(count < cachedSort.count);
                     if (sortType == BatchStage::SortType::Performance)
                     {
-                        cachedSort.batches[count].sortKey = item->performanceSortKey;
+                        cachedSort.batches[count].sortKey = entry->performanceSortKey;
                     }
                     else
                     {
                         cachedSort.batches[count].sortKey = 0;
-                        (float&)cachedSort.batches[count].sortKey = item->sortDepth;
+                        (float&)cachedSort.batches[count].sortKey = entry->sortDepth;
                     }
                     //cachedSort.batches[count].batch = &item->batch;   TODO
                     cachedSort.batches[count].batch = nullptr;
