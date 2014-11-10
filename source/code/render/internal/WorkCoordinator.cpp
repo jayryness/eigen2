@@ -72,90 +72,88 @@ namespace eigen
         _head = nullptr;
     }
 
-    void WorkCoordinator::addSortJob(Renderer& renderer, Worklist* worklist, BatchStage* batchStage, SortJob**& tail)
+    inline WorkCoordinator::SortJob* WorkCoordinator::createSortJob(Renderer& renderer, Worklist* worklist, unsigned count)
     {
-        if (batchStage->sortType == BatchStage::SortType::Performance)
+        unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
+        SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
+
+        job->next = nullptr;
+        job->worklist = worklist;
+        job->cachedSort.count = count;
+        job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
+
+        return job;
+    }
+
+    void WorkCoordinator::addSortJobs(Renderer& renderer, Worklist* worklist, SortJob**& tail)
+    {
+        Stage* stage = worklist->_stages;
+        for (unsigned stageCount = worklist->_stagesCount; stageCount > 0; stageCount--, stage = stage->advance())
         {
-            // For performance sort, slots are sorted individually, so multiple sort jobs are created
+            if (stage->type != Stage::Type::Batch)
+                continue;
 
-            unsigned cur, end;
-            batchStage->ports.getRange(cur, end);
-            RenderPort::Set curBit = batchStage->ports;
-            curBit.clearExceptLsb();
+            BatchStage* batchStage = (BatchStage*) stage;
 
-            for (; cur < end; cur++, curBit<<=1)
+            if (batchStage->sortType == BatchStage::SortType::Performance)
             {
-                if (!curBit.intersects(batchStage->ports) || !worklist->_slots[cur].count)
-                    continue;
+                // For performance sort, slots are sorted individually, so multiple sort jobs are appended
 
-                unsigned hash = curBit.hash();
+                batchStage->ports.forEach(
+                    [&](unsigned portIndex, const RenderPort::Set& portBit)
+                    {
+                        if (worklist->_slots[portIndex].count == 0)
+                            return;
 
-                hash ^= 0xabcdef12; // Ok, this sucks. Need to discriminate perf sort jobs from depth sort jobs. Whole system needs refactor TODO
+                        Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedPerfSort(portIndex);
+                        if (sortCacheEntry.cached == nullptr)
+                        {
+                            SortJob* job = createSortJob(renderer, worklist, worklist->_slots[portIndex].count);
+                            job->sortType = BatchStage::SortType::Performance;
+                            job->cachedSort.ports = portBit;
 
-                Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedSort(hash);
+                            sortCacheEntry.cached = &job->cachedSort;
+
+                            *tail = job;
+                            tail = &job->next;
+                        }
+                        assert(sortCacheEntry.cached->ports == portBit && sortCacheEntry.cached->count == worklist->_slots[portIndex].count);
+                    }
+                );
+            }
+            else if (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth)
+            {
+                // For depth sort, all participating slots are merged and sorted in one big array/job
+
+                unsigned count = 0;
+                batchStage->ports.forEach(
+                    [&](unsigned portIndex, const RenderPort::Set& portBit)
+                    {
+                        count += worklist->_slots[portIndex].count;
+                    }
+                );
+
+                if (count == 0)
+                    return;
+
+                Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedDepthSort(batchStage->ports);
                 if (sortCacheEntry.cached == nullptr)
                 {
-                    unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * worklist->_slots[cur].count;
-                    SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
-
-                    job->next = nullptr;
-                    job->sortType = BatchStage::SortType::Performance;
-                    job->worklist = worklist;
-                    job->cachedSort.count = worklist->_slots[cur].count;
-                    job->cachedSort.ports = curBit;
-                    job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
+                    SortJob* job = createSortJob(renderer, worklist, count);
+                    job->sortType = BatchStage::SortType::IncreasingDepth;  // decreasing depth is handled by submitting the batches back to front
+                    job->cachedSort.ports = batchStage->ports;
 
                     sortCacheEntry.cached = &job->cachedSort;
 
                     *tail = job;
                     tail = &job->next;
                 }
-                assert(sortCacheEntry.cached->ports == curBit && sortCacheEntry.cached->count == worklist->_slots[cur].count);
+                assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
             }
-        }
-        else if (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth)
-        {
-            // For depth sort, all participating slots are merged and sorted in one big array/job
-
-            unsigned cur, end;
-            batchStage->ports.getRange(cur, end);
-            RenderPort::Set curBit = batchStage->ports;
-            curBit.clearExceptLsb();
-
-            unsigned count = 0;
-            for (; cur < end; cur++, curBit <<= 1)
+            else
             {
-                if (curBit.intersects(batchStage->ports))
-                    count += worklist->_slots[cur].count;
+                assert(false);
             }
-
-            if (count == 0)
-                return;
-
-            unsigned hash = batchStage->ports.hash();
-            Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedSort(hash);
-            if (sortCacheEntry.cached == nullptr)
-            {
-                unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
-                SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
-
-                job->next = nullptr;
-                job->sortType = BatchStage::SortType::IncreasingDepth;  // decreasing depth is handled by submitting the batches back to front
-                job->worklist = worklist;
-                job->cachedSort.count = count;
-                job->cachedSort.ports = batchStage->ports;
-                job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
-
-                sortCacheEntry.cached = &job->cachedSort;
-
-                *tail = job;
-                tail = &job->next;
-            }
-            assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
-        }
-        else
-        {
-            assert(false);
         }
     }
 
@@ -171,16 +169,7 @@ namespace eigen
 
         for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
         {
-            Stage* stage = worklist->_stages;
-            for (unsigned count = worklist->_stagesCount; count > 0; count--)
-            {
-                if (stage->type == Stage::Type::Batch)
-                {
-                    BatchStage* batchStage = (BatchStage*)stage;
-                    addSortJob(renderer, worklist, batchStage, sortJobTail);
-                }
-                stage = stage->advance();
-            }
+            addSortJobs(renderer, worklist, sortJobTail);
         }
 
         // Issue sort jobs
@@ -221,18 +210,13 @@ namespace eigen
     {
         assert(cachedSort.count > 0);
 
-        unsigned cur, end;
-        cachedSort.ports.getRange(cur, end);
-        RenderPort::Set curBit = cachedSort.ports;
-        curBit.clearExceptLsb();
-
         unsigned count = 0;
+
         // Copy batches from slots into sort array
-        for (; cur < end; cur++, curBit <<= 1)
-        {
-            if (curBit.intersects(cachedSort.ports))
+        cachedSort.ports.forEach(
+            [&](unsigned index, const RenderPort::Set&)
             {
-                Worklist::Item* item = worklist->_slots[cur].head;
+                Worklist::Item* item = worklist->_slots[index].head;
                 for (; item; item = item->next)
                 {
                     assert(count < cachedSort.count);
@@ -250,7 +234,8 @@ namespace eigen
                     count++;
                 }
             }
-        }
+        );
+
         assert(count == cachedSort.count);
 
         std::sort(cachedSort.batches, cachedSort.batches + count);

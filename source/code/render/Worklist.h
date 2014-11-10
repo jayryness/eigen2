@@ -25,8 +25,16 @@ namespace eigen
     {
     public:
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        // User API
+        //
+
         void                commitBatch(Batch* batch, const RenderPort* port, float sortDepth);
         void                finish();
+
+        //
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     protected:
 
@@ -50,7 +58,6 @@ namespace eigen
         {
             Item*           head;   // could make this atomic
             int             count;  // and this
-            //SortBatch*      performanceSorted;
         };
 
         struct CachedSort
@@ -62,7 +69,7 @@ namespace eigen
 
         struct SortCacheEntry
         {
-            unsigned        hash;
+            unsigned        lookupKey;
             CachedSort*     cached;
         };
 
@@ -75,32 +82,44 @@ namespace eigen
 
         static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 
-        SortCacheEntry&     findCachedSort(unsigned hash) const; 
+        SortCacheEntry&     findCachedDepthSort(const RenderPort::Set& ports) const; 
+        SortCacheEntry&     findCachedPerfSort(unsigned portIndex) const; 
 
-        Worklist*           _next           = nullptr;
-        Renderer*           _renderer       = nullptr;
-        Stage*              _stages         = nullptr;
-        Slot*               _slots          = nullptr;
-        int8_t*             _buffer         = nullptr;
-        int8_t*             _bufferEnd      = nullptr;
-        SortCacheEntry*     _sortCache      = nullptr;
+        Worklist*           _next               = nullptr;
+        Renderer*           _renderer           = nullptr;
+        Stage*              _stages             = nullptr;
+        Slot*               _slots              = nullptr;
+        int8_t*             _buffer             = nullptr;
+        int8_t*             _bufferEnd          = nullptr;
+        SortCacheEntry*     _perfSortCache      = nullptr;
+        SortCacheEntry*     _depthSortCache     = nullptr;
         RenderPort::Set     _ports;
-        unsigned            _stagesCount    = 0;
-        unsigned            _sortCacheMask  = 0;
-        unsigned            _portRangeStart = 0;
-        unsigned            _portRangeEnd   = 0;
+        unsigned            _stagesCount        = 0;
+        unsigned            _depthSortCacheMask = 0;
+        unsigned            _portRangeStart     = 0;
+        unsigned            _portRangeEnd       = 0;
     };
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedSort(unsigned hash) const
+    inline Worklist::SortCacheEntry& Worklist::findCachedDepthSort(const RenderPort::Set& ports) const
     {
-        for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
+        unsigned hash = ports.hash();
+
+        for (unsigned i = hash & _depthSortCacheMask; ; i = (i+1) & _depthSortCacheMask)
         {
-            if (_sortCache[i].hash == 0 || _sortCache[i].hash == hash)
+            if (_depthSortCache[i].lookupKey == 0 || _depthSortCache[i].lookupKey == hash)
             {
-                _sortCache[i].hash = hash;
-                return _sortCache[i];
+                _depthSortCache[i].lookupKey = hash;
+                return _depthSortCache[i];
             }
         }
+    }
+
+    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(unsigned portIndex) const
+    {
+        assert(_portRangeStart <= portIndex && portIndex < _portRangeEnd);
+        assert(_perfSortCache[portIndex].lookupKey == 0 || _perfSortCache[portIndex].lookupKey == portIndex);
+        _perfSortCache[portIndex].lookupKey = portIndex;
+        return _perfSortCache[portIndex];
     }
 
     inline bool Worklist::SortBatch::operator<(const SortBatch& other) const

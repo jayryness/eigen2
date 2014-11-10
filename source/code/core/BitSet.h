@@ -29,6 +29,9 @@ namespace eigen
         void        complement();
         void        clearExceptLsb();
 
+                    template<typename T_FUNC>
+        void        forEach(T_FUNC func);       // func(unsigned position, const BitSet& bit)
+
         void        getRange(unsigned& start, unsigned& end) const; // [start, end)
         unsigned    hash() const;
 
@@ -199,12 +202,7 @@ namespace eigen
                 uint64_t x = _parts[s];
                 x &= -(int64_t)x;
                 start = s*64;
-                start += ((x & 0x00000000ffffffff) == 0) * 32;
-                start += ((x & 0x0000ffff0000ffff) == 0) * 16;
-                start += ((x & 0x00ff00ff00ff00ff) == 0) * 8;
-                start += ((x & 0x0f0f0f0f0f0f0f0f) == 0) * 4;
-                start += ((x & 0x3333333333333333) == 0) * 2;
-                start += ((x & 0x5555555555555555) == 0) * 1;
+                start += LocateBit(x);
                 break;
             }
         }
@@ -229,12 +227,7 @@ namespace eigen
                 x >>= 1;
                 x++;
                 end = e*64 + 1;
-                end += ((x & 0x00000000ffffffff) == 0) * 32;
-                end += ((x & 0x0000ffff0000ffff) == 0) * 16;
-                end += ((x & 0x00ff00ff00ff00ff) == 0) * 8;
-                end += ((x & 0x0f0f0f0f0f0f0f0f) == 0) * 4;
-                end += ((x & 0x3333333333333333) == 0) * 2;
-                end += ((x & 0x5555555555555555) == 0) * 1;
+                end += LocateBit(x);
                 return;
             }
         }
@@ -262,4 +255,37 @@ namespace eigen
 
         return (unsigned)(sizeof(unsigned) < 8 ? (h >> 32) : h);
     }
+
+    template<int N> template<typename T_FUNC> void BitSet<N>::forEach(T_FUNC func)
+    {
+        BitSet bit;
+
+        for (unsigned i = 0; i < Parts; i++)
+        {
+            if (_parts[i] == 0)
+                continue;
+
+            do
+            {
+                bit._parts[i] = _parts[i] & -(int64_t)_parts[i];
+
+                unsigned pos = i*64;
+                pos += LocateBit(bit._parts[i]);
+
+                do
+                {
+                    if (bit._parts[i] & _parts[i])
+                    {
+                        func(pos, bit);
+                    }
+                    pos++;
+                    bit._parts[i] <<= 1;
+                }   while (bit._parts[i] <= _parts[i]);
+                i++;
+            }   while (_parts[i] && i < Parts);
+
+            return;
+        }
+    }
+
 }
