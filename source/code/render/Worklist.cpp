@@ -35,6 +35,7 @@ namespace eigen
         worklist->_depthSortCacheMask = depthSortCacheMask;
         worklist->_buffer = (int8_t*)worklist->_depthSortCache + sizeOfDepthSortCache;
         worklist->_bufferEnd = worklist->_buffer + ChunkSize;
+        worklist->_ports = plan->_ports;
         worklist->_portRangeStart = portRangeStart;
         worklist->_portRangeEnd = portRangeEnd;
 
