@@ -83,7 +83,7 @@ namespace eigen
         static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 
         SortCacheEntry&     findCachedDepthSort(const RenderPort::Set& ports) const; 
-        SortCacheEntry&     findCachedPerfSort(unsigned portIndex) const; 
+        SortCacheEntry&     findCachedPerfSort(const RenderPort::Set& ports) const; 
 
         Worklist*           _next               = nullptr;
         Renderer*           _renderer           = nullptr;
@@ -95,7 +95,7 @@ namespace eigen
         SortCacheEntry*     _depthSortCache     = nullptr;
         RenderPort::Set     _ports;
         unsigned            _stagesCount        = 0;
-        unsigned            _depthSortCacheMask = 0;
+        unsigned            _sortCacheMask      = 0;
         unsigned            _portRangeStart     = 0;
         unsigned            _portRangeEnd       = 0;
     };
@@ -104,7 +104,7 @@ namespace eigen
     {
         unsigned hash = ports.hash();
 
-        for (unsigned i = hash & _depthSortCacheMask; ; i = (i+1) & _depthSortCacheMask)
+        for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
         {
             if (_depthSortCache[i].lookupKey == 0 || _depthSortCache[i].lookupKey == hash)
             {
@@ -114,12 +114,18 @@ namespace eigen
         }
     }
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(unsigned portIndex) const
+    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(const RenderPort::Set& ports) const
     {
-        assert(_portRangeStart <= portIndex && portIndex < _portRangeEnd);
-        assert(_perfSortCache[portIndex].lookupKey == 0 || _perfSortCache[portIndex].lookupKey == portIndex);
-        _perfSortCache[portIndex].lookupKey = portIndex;
-        return _perfSortCache[portIndex];
+        unsigned hash = ports.hash();
+
+        for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
+        {
+            if (_perfSortCache[i].lookupKey == 0 || _perfSortCache[i].lookupKey == hash)
+            {
+                _perfSortCache[i].lookupKey = hash;
+                return _depthSortCache[i];
+            }
+        }
     }
 
     inline bool Worklist::SortBatch::operator<(const SortBatch& other) const

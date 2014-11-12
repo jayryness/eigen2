@@ -22,11 +22,8 @@ namespace eigen
     void Renderer::cleanup()
     {
         assert(_frameNumber > 0);
-        // todo - stop the world
-        if (_workSubmissionThread.joinable())
-        {
-            _workSubmissionThread.join();
-        }
+
+        _workCoordinator.stop();
 
         while (_deadMeat.getCount())
         {
@@ -97,7 +94,7 @@ namespace eigen
         //    printf("Submitting frame #%d\n", _frameNumber);
         //}
         _workCoordinator.sync();
-        _workCoordinator.prepareWork(*this, head);
+        _workCoordinator.prepareWork(head);
         _workCoordinator.kick();
 
         if (_scratchAllocPtr > _scratchAllocEnd)
@@ -129,6 +126,5 @@ namespace eigen
         }
 
         _frameNumber++;
-        // TODO: kick submission thread
     }
 }

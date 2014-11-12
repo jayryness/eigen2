@@ -55,13 +55,13 @@ namespace eigen
         }
 
         // Create deferred contexts if num threads > 1
-        if (config.submitThreads > 1)
+        if (config.submissionThreads > 1)
         {
-            plat.deferredContextCount = config.submitThreads;
+            plat.deferredContextCount = config.submissionThreads;
 
-            plat.deferredContexts = AllocateMemory<ID3D11DeviceContext*>(config.allocator, config.submitThreads);
-            memset(plat.deferredContexts, 0, config.submitThreads*sizeof(*plat.deferredContexts));
-            for (unsigned i = 0; i < config.submitThreads; i++)
+            plat.deferredContexts = AllocateMemory<ID3D11DeviceContext*>(config.allocator, config.submissionThreads);
+            memset(plat.deferredContexts, 0, config.submissionThreads*sizeof(*plat.deferredContexts));
+            for (unsigned i = 0; i < config.submissionThreads; i++)
             {
                 hr = plat.device.Get()->CreateDeferredContext(0, plat.deferredContexts+i);
                 if (FAILED(hr))

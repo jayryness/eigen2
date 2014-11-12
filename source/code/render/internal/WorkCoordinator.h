@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/memory.h"
 #include "core/math.h"
 #include "../RenderPort.h"
 
@@ -12,46 +13,43 @@ namespace eigen
     class WorkCoordinator
     {
     public:
-                                    friend struct AsyncDetails;
+                                    struct Thread;
 
-                                    WorkCoordinator();
+                                    WorkCoordinator(Renderer& renderer);
                                     ~WorkCoordinator();
 
+        void                        initialize(Allocator* allocator, unsigned submissionThreads);
+
         void                        sync();
-        void                        prepareWork(Renderer& renderer, Worklist* head);
+        void                        prepareWork(Worklist* head);
         void                        kick();
 
         void                        stop();
 
-        AsyncDetails&               getAsyncDetails();
+        Thread&                     getThread();
 
     private:
                                     struct SortJob;
                                     struct StageJob;
 
-        void                        thread();
-        void                        addSortJobs(Renderer& renderer, Worklist* worklist, SortJob**& tail);
-        SortJob*                    createSortJob(Renderer& renderer, Worklist* worklist, unsigned count);
+        void                        asyncRun();
+        void                        addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd);
+        SortJob*                    createSortJob(Worklist* worklist, unsigned count);
 
-        Worklist*                   _head = nullptr;
+        Renderer&                   _renderer;
 
-        //PodArray<SortCacheEntry>    _sortCache;
-        //unsigned                    _sortCacheMask  = SortCacheSize;
+        Worklist*                   _head           = nullptr;
 
-        SortJob*                    _sortJobs;
-        StageJob*                   _stageJobs;
+        SortJob*                    _sortJobHead    = nullptr;
+        StageJob*                   _stageJobs      = nullptr;
+        unsigned                    _stageJobCount  = 0;
 
-        void*                       _asyncDetails[6];
+        void*                       _thread[6];
     };
 
-    inline WorkCoordinator::~WorkCoordinator()
+    inline WorkCoordinator::Thread& WorkCoordinator::getThread()
     {
-        stop();
-    }
-
-    inline AsyncDetails& WorkCoordinator::getAsyncDetails()
-    {
-        return (AsyncDetails&)_asyncDetails;
+        return (Thread&)_thread;
     }
 
 }

@@ -165,9 +165,9 @@ void Demo::run()
     GetClientRect(_hwnd, &clientRect);
 
     eigen::Renderer::Config renderConfig;
-    renderConfig.debugEnabled   = true;
-    renderConfig.scratchSize    = 16*1024*1024;
-    renderConfig.submitThreads  = 1;
+    renderConfig.debugEnabled       = true;
+    renderConfig.scratchSize        = 16*1024*1024;
+    renderConfig.submissionThreads  = 1;
 
     eigen::Renderer renderer;
     {

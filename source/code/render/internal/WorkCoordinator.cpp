@@ -6,14 +6,14 @@
 
 namespace eigen
 {
-    struct AsyncDetails
+    struct WorkCoordinator::Thread
     {
         static void Run(WorkCoordinator* coordinator)
         {
-            coordinator->thread();
+            coordinator->asyncRun();
         }
 
-        AsyncDetails(WorkCoordinator* coordinator)
+        Thread(WorkCoordinator* coordinator)
             : stopRequested(false)
             , mutex()
             , thread(Run, coordinator)
@@ -37,45 +37,63 @@ namespace eigen
 
     struct WorkCoordinator::StageJob
     {
-        StageJob*               next;
         Stage*                  stage;
-        unsigned                count;
-        SortJob*                sortJob;
+        Worklist::SortBatch*    batches;
+        unsigned                batchStart;
+        unsigned                batchEnd;
     };
 
-    WorkCoordinator::WorkCoordinator()
+    WorkCoordinator::WorkCoordinator(Renderer& renderer)
+        : _renderer(renderer)
     {
-        static_assert(sizeof(AsyncDetails) <= sizeof(_asyncDetails), "Must increaase size of WorkCoordinator::_asyncDetails");
-        new(&_asyncDetails) AsyncDetails(this);
+        static_assert(sizeof(Thread) <= sizeof(_thread), "Must increaase size of WorkCoordinator::_thread");
+        new(&_thread) Thread(this);
     }
 
-    void WorkCoordinator::thread()
+    WorkCoordinator::~WorkCoordinator()
     {
-        AsyncDetails& asyncDetails = getAsyncDetails();
+        stop();
+    }
+
+    void WorkCoordinator::initialize(Allocator* allocator, unsigned submissionThreads)
+    {
+    }
+
+    void WorkCoordinator::asyncRun()
+    {
+        Thread& thread = getThread();
 
         while (true)
         {
-            std::unique_lock<std::mutex> lock(asyncDetails.mutex);
+            std::unique_lock<std::mutex> lock(thread.mutex);
 
-            if (asyncDetails.stopRequested)
+            if (thread.stopRequested)
                 return;
 
-            // do work here
+            // TODO no concurrent sort job issuing yet
+            for (SortJob* job = _sortJobHead; job; job = job->next)
+            {
+                job->execute();
+            }
+
+            // Wait for sort jobs to finish
+
+            // Issue batches
         }
     }
 
     void WorkCoordinator::sync()
     {
-        AsyncDetails& asyncDetails = getAsyncDetails();
+        Thread& thread = getThread();
 
-        asyncDetails.mutex.lock();
+        thread.mutex.lock();
         _head = nullptr;
     }
 
-    inline WorkCoordinator::SortJob* WorkCoordinator::createSortJob(Renderer& renderer, Worklist* worklist, unsigned count)
+    inline WorkCoordinator::SortJob* WorkCoordinator::createSortJob(Worklist* worklist, unsigned count)
     {
         unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
-        SortJob* job = (SortJob*)renderer.scratchAlloc(bytes);
+        SortJob* job = (SortJob*)_renderer.scratchAlloc(bytes);
 
         job->next = nullptr;
         job->worklist = worklist;
@@ -85,125 +103,119 @@ namespace eigen
         return job;
     }
 
-    void WorkCoordinator::addSortJobs(Renderer& renderer, Worklist* worklist, SortJob**& tail)
+    void WorkCoordinator::addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd)
     {
+        unsigned submissionCost = 0;
+
         Stage* stage = worklist->_stages;
         for (unsigned stageCount = worklist->_stagesCount; stageCount > 0; stageCount--, stage = stage->advance())
         {
-            if (stage->type != Stage::Type::Batch)
+            stageJobEnd->stage = stage;
+            stageJobEnd->batches = nullptr;
+            stageJobEnd->batchStart = 0;
+            stageJobEnd->batchEnd = 0;
+
+            BatchStage* batchStage;
+
+            switch (stage->type)
+            {
+            case Stage::Type::Clear:
+                stageJobEnd++;
+                continue;
+            case Stage::Type::Batch:
+                batchStage = (BatchStage*)stage;
+                break;
+            case Stage::Type::Filter:
+                submissionCost++;
+                stageJobEnd++;
+                continue;
+            default:
+                assert(false);  // worklist is corrupt
+                return;
+            }
+
+            bool isDepthSort = (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth);
+
+            unsigned count = 0;
+            batchStage->ports.forEach(
+                [&](unsigned portIndex, const RenderPort::Set& portBit)
+                {
+                    count += worklist->_batchLists[portIndex].count;
+                }
+            );
+
+            if (count == 0)
                 continue;
 
-            BatchStage* batchStage = (BatchStage*) stage;
+            submissionCost += count;
 
-            if (batchStage->sortType == BatchStage::SortType::Performance)
+            Worklist::SortCacheEntry& sortCacheEntry = isDepthSort ? worklist->findCachedDepthSort(batchStage->ports) : worklist->findCachedPerfSort(batchStage->ports);
+            if (sortCacheEntry.cached == nullptr)
             {
-                // For performance sort, slots are sorted individually, so multiple sort jobs are appended
+                SortJob* job = createSortJob(worklist, count);
+                job->sortType = isDepthSort ? BatchStage::SortType::IncreasingDepth : BatchStage::SortType::Performance;
+                job->cachedSort.ports = batchStage->ports;
 
-                batchStage->ports.forEach(
-                    [&](unsigned portIndex, const RenderPort::Set& portBit)
-                    {
-                        if (worklist->_batchLists[portIndex].count == 0)
-                            return;
+                sortCacheEntry.cached = &job->cachedSort;
 
-                        Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedPerfSort(portIndex);
-                        if (sortCacheEntry.cached == nullptr)
-                        {
-                            SortJob* job = createSortJob(renderer, worklist, worklist->_batchLists[portIndex].count);
-                            job->sortType = BatchStage::SortType::Performance;
-                            job->cachedSort.ports = portBit;
-
-                            sortCacheEntry.cached = &job->cachedSort;
-
-                            *tail = job;
-                            tail = &job->next;
-                        }
-                        assert(sortCacheEntry.cached->ports == portBit && sortCacheEntry.cached->count == worklist->_batchLists[portIndex].count);
-                    }
-                );
+                *sortJobTail = job;
+                sortJobTail = &job->next;
             }
-            else if (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth)
-            {
-                // For depth sort, all participating slots are merged and sorted in one big array/job
+            assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
 
-                unsigned count = 0;
-                batchStage->ports.forEach(
-                    [&](unsigned portIndex, const RenderPort::Set& portBit)
-                    {
-                        count += worklist->_batchLists[portIndex].count;
-                    }
-                );
-
-                if (count == 0)
-                    return;
-
-                Worklist::SortCacheEntry& sortCacheEntry = worklist->findCachedDepthSort(batchStage->ports);
-                if (sortCacheEntry.cached == nullptr)
-                {
-                    SortJob* job = createSortJob(renderer, worklist, count);
-                    job->sortType = BatchStage::SortType::IncreasingDepth;  // decreasing depth is handled by submitting the batches back to front
-                    job->cachedSort.ports = batchStage->ports;
-
-                    sortCacheEntry.cached = &job->cachedSort;
-
-                    *tail = job;
-                    tail = &job->next;
-                }
-                assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
-            }
-            else
-            {
-                assert(false);
-            }
+            stageJobEnd->batches = sortCacheEntry.cached->batches;
+            stageJobEnd->batchStart = 0;
+            stageJobEnd->batchEnd = sortCacheEntry.cached->count;
+            stageJobEnd++;
         }
     }
 
-    void WorkCoordinator::prepareWork(Renderer& renderer, Worklist* head)
+    void WorkCoordinator::prepareWork(Worklist* head)
     {
         assert(_head == nullptr);
         _head = head;
 
-        // Create sort jobs
+        // Count total stages across all worklists
 
-        _sortJobs = nullptr;
-        SortJob** sortJobTail = &_sortJobs;
+        _stageJobCount = 0;
+        for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
+        {
+            _stageJobCount += worklist->_stagesCount;
+        }
+
+        // Populate sort jobs and stage jobs
+
+        _sortJobHead = nullptr;
+        SortJob** sortJobTail = &_sortJobHead;
+
+        _stageJobs = (StageJob*)_renderer.scratchAlloc(sizeof(StageJob) * _stageJobCount);
+        StageJob* stageJobEnd = _stageJobs;
 
         for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
         {
-            addSortJobs(renderer, worklist, sortJobTail);
+            addWorklistJobs(worklist, sortJobTail, stageJobEnd);
         }
-
-        // Issue sort jobs
-
-        // TODO no concurrent sort job issuing yet
-        for (SortJob* job = _sortJobs; job; job = job->next)
-        {
-            job->execute();
-        }
-
-        // Wait for sort jobs to finish
-
-        // Issue batches
-
     }
 
     void WorkCoordinator::kick()
     {
-        AsyncDetails& asyncDetails = getAsyncDetails();
+        Thread& thread = getThread();
 
-        asyncDetails.mutex.unlock();
+        thread.mutex.unlock();
     }
 
     void WorkCoordinator::stop()
     {
-        AsyncDetails& asyncDetails = getAsyncDetails();
+        Thread& thread = getThread();
 
         sync();
 
-        asyncDetails.stopRequested = true;
+        thread.stopRequested = true;
 
         kick();
 
-        asyncDetails.thread.join();
+        if (thread.thread.joinable())   // TODO seems sketchy, fixes shutdown problem
+            thread.thread.join();
     }
 
     void WorkCoordinator::SortJob::execute()

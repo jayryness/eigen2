@@ -30,11 +30,11 @@ namespace eigen
 
         struct Config
         {
-            Allocator*          allocator       = Mallocator::Get();
-            bool                debugEnabled    = false;
-            unsigned            scratchSize     = 16*1024*1024;
-            unsigned            submitThreads   = 1;
-            PlatformConfig*     platformConfig  = nullptr;
+            Allocator*          allocator           = Mallocator::Get();
+            bool                debugEnabled        = false;
+            unsigned            scratchSize         = 16*1024*1024;
+            unsigned            submissionThreads   = 1;
+            PlatformConfig*     platformConfig      = nullptr;
         };
 
                                 Renderer();
@@ -97,7 +97,6 @@ namespace eigen
 
         Worklist*               _openWorklistHead   = nullptr;
         WorkCoordinator         _workCoordinator;
-        std::thread             _workSubmissionThread;
 
         unsigned                _frameNumber        = 0;
 
@@ -115,6 +114,7 @@ namespace eigen
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     inline Renderer::Renderer()
+        : _workCoordinator(*this)
     {
     }
 
