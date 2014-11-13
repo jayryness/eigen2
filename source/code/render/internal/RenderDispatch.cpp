@@ -1,4 +1,3 @@
-#include "WorkCoordinator.h"
 #include "../Renderer.h"
 #include <thread>
 #include <condition_variable>
@@ -6,14 +5,14 @@
 
 namespace eigen
 {
-    struct WorkCoordinator::Thread
+    struct RenderDispatch::Thread
     {
-        static void Run(WorkCoordinator* coordinator)
+        static void Run(RenderDispatch* coordinator)
         {
             coordinator->asyncRun();
         }
 
-        Thread(WorkCoordinator* coordinator)
+        Thread(RenderDispatch* coordinator)
             : stopRequested(false)
             , mutex()
             , thread(Run, coordinator)
@@ -25,7 +24,7 @@ namespace eigen
         std::thread             thread;
     };
 
-    struct WorkCoordinator::SortJob
+    struct RenderDispatch::SortJob
     {
         SortJob*                next;
         Worklist*               worklist;
@@ -35,31 +34,23 @@ namespace eigen
         void execute();
     };
 
-    struct WorkCoordinator::StageJob
-    {
-        Stage*                  stage;
-        Worklist::SortBatch*    batches;
-        unsigned                batchStart;
-        unsigned                batchEnd;
-    };
-
-    WorkCoordinator::WorkCoordinator(Renderer& renderer)
+    RenderDispatch::RenderDispatch(Renderer& renderer)
         : _renderer(renderer)
     {
-        static_assert(sizeof(Thread) <= sizeof(_thread), "Must increaase size of WorkCoordinator::_thread");
-        new(&_thread) Thread(this);
+        static_assert(sizeof(Thread) <= sizeof(_threadSpace), "Must increaase size of RenderDispatch::_threadSpace");
+        new(&_threadSpace) Thread(this);
     }
 
-    WorkCoordinator::~WorkCoordinator()
+    RenderDispatch::~RenderDispatch()
     {
         stop();
     }
 
-    void WorkCoordinator::initialize(Allocator* allocator, unsigned submissionThreads)
+    void RenderDispatch::initialize(Allocator* allocator, unsigned submissionThreads)
     {
     }
 
-    void WorkCoordinator::asyncRun()
+    void RenderDispatch::asyncRun()
     {
         Thread& thread = getThread();
 
@@ -79,10 +70,15 @@ namespace eigen
             // Wait for sort jobs to finish
 
             // Issue batches
+
+            for (unsigned i = 0; i < _stageJobCount; i++)
+            {
+                submitStageJob(0, _stageJobs[i]);
+            }
         }
     }
 
-    void WorkCoordinator::sync()
+    void RenderDispatch::sync()
     {
         Thread& thread = getThread();
 
@@ -90,7 +86,7 @@ namespace eigen
         _head = nullptr;
     }
 
-    inline WorkCoordinator::SortJob* WorkCoordinator::createSortJob(Worklist* worklist, unsigned count)
+    inline RenderDispatch::SortJob* RenderDispatch::createSortJob(Worklist* worklist, unsigned count)
     {
         unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
         SortJob* job = (SortJob*)_renderer.scratchAlloc(bytes);
@@ -103,7 +99,7 @@ namespace eigen
         return job;
     }
 
-    void WorkCoordinator::addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd)
+    void RenderDispatch::addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd)
     {
         unsigned submissionCost = 0;
 
@@ -170,7 +166,7 @@ namespace eigen
         }
     }
 
-    void WorkCoordinator::prepareWork(Worklist* head)
+    void RenderDispatch::prepareWork(Worklist* head)
     {
         assert(_head == nullptr);
         _head = head;
@@ -197,14 +193,14 @@ namespace eigen
         }
     }
 
-    void WorkCoordinator::kick()
+    void RenderDispatch::kick()
     {
         Thread& thread = getThread();
 
         thread.mutex.unlock();
     }
 
-    void WorkCoordinator::stop()
+    void RenderDispatch::stop()
     {
         Thread& thread = getThread();
 
@@ -218,7 +214,7 @@ namespace eigen
             thread.thread.join();
     }
 
-    void WorkCoordinator::SortJob::execute()
+    void RenderDispatch::SortJob::execute()
     {
         assert(cachedSort.count > 0);
 

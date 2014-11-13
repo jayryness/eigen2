@@ -80,6 +80,11 @@ namespace eigen
         return _config;
     }
 
+    inline unsigned TargetSet::getTextureCount() const
+    {
+        return _textureCount;
+    }
+
     inline void TargetSet::detach()
     {
         platformDetach();

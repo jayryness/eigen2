@@ -3,6 +3,7 @@
 #include "core/memory.h"
 #include "core/math.h"
 #include "../RenderPort.h"
+#include "../Worklist.h"    // TODO find better home for StageJob so this isn't needed
 
 namespace eigen
 {
@@ -10,13 +11,13 @@ namespace eigen
     class Renderer;
     struct BatchStage;
 
-    class WorkCoordinator
+    class RenderDispatch
     {
     public:
                                     struct Thread;
 
-                                    WorkCoordinator(Renderer& renderer);
-                                    ~WorkCoordinator();
+                                    RenderDispatch(Renderer& renderer);
+                                    ~RenderDispatch();
 
         void                        initialize(Allocator* allocator, unsigned submissionThreads);
 
@@ -35,6 +36,7 @@ namespace eigen
         void                        asyncRun();
         void                        addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd);
         SortJob*                    createSortJob(Worklist* worklist, unsigned count);
+        void                        submitStageJob(unsigned context, const StageJob& stageJob);
 
         Renderer&                   _renderer;
 
@@ -44,12 +46,20 @@ namespace eigen
         StageJob*                   _stageJobs      = nullptr;
         unsigned                    _stageJobCount  = 0;
 
-        void*                       _thread[6];
+        void*                       _threadSpace[6];
     };
 
-    inline WorkCoordinator::Thread& WorkCoordinator::getThread()
+    struct RenderDispatch::StageJob
     {
-        return (Thread&)_thread;
+        Stage*                      stage;
+        Worklist::SortBatch*        batches;
+        unsigned                    batchStart;
+        unsigned                    batchEnd;
+    };
+
+    inline RenderDispatch::Thread& RenderDispatch::getThread()
+    {
+        return (Thread&)_threadSpace;
     }
 
 }

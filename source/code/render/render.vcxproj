@@ -79,7 +79,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="internal\WorkCoordinator.h" />
+    <ClInclude Include="internal\RenderDispatch.h" />
     <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="RenderPort.h" />
     <ClInclude Include="Stage.h" />
@@ -98,10 +98,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dx11\DisplayDx11.cpp" />
+    <ClCompile Include="dx11\RenderDispatchDx11.cpp" />
     <ClCompile Include="dx11\RendererDx11.cpp" />
     <ClCompile Include="dx11\TargetSetDx11.cpp" />
     <ClCompile Include="dx11\TextureDx11.cpp" />
-    <ClCompile Include="internal\WorkCoordinator.cpp" />
+    <ClCompile Include="internal\RenderDispatch.cpp" />
     <ClCompile Include="RenderPlan.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="TargetSet.cpp" />

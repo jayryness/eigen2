@@ -78,7 +78,7 @@ namespace eigen
                             ChunkSize = 16*1024,
         };
                             friend class Renderer;
-                            friend class WorkCoordinator;
+                            friend class RenderDispatch;
 
         static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 

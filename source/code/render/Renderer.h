@@ -1,6 +1,6 @@
 #pragma once
 
-#include "internal/WorkCoordinator.h"
+#include "internal/RenderDispatch.h"
 #include "core/RefCounted.h"
 #include "core/PodDeque.h"
 #include "core/Error.h"
@@ -96,7 +96,7 @@ namespace eigen
         int8_t*                 _scratchAllocEnd    = 0;
 
         Worklist*               _openWorklistHead   = nullptr;
-        WorkCoordinator         _workCoordinator;
+        RenderDispatch          _workCoordinator;
 
         unsigned                _frameNumber        = 0;
 
@@ -107,7 +107,6 @@ namespace eigen
         PlatformDetails&        getPlatformDetails();
         RenderPlanManager&      getPlanManager();
         int8_t*                 scratchAlloc(uintptr_t bytes);
-
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
