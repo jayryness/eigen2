@@ -29,6 +29,7 @@
     <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="internal\RenderDispatch.h" />
+    <ClInclude Include="internal\DisplayManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

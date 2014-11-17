@@ -45,4 +45,11 @@ namespace eigen
 
         EIGEN_RETURN_OK();
     }
+
+    void Display::present()
+    {
+        DisplayDx11* display = (DisplayDx11*)this;
+        HRESULT hr = display->_swapChain.Get()->Present(0, 0);
+        assert(hr == S_OK);
+    }
 }

@@ -94,7 +94,7 @@ namespace eigen
 
     template<class T> Keysmith<T>::Keysmith()
     {
-        memset(_hashes, 0, sizeof(_keys));
+        memset(_hashes, 0, sizeof(_hashes));
         memset(_indices, -1, sizeof(_indices));
     }
 

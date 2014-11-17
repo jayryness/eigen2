@@ -282,7 +282,7 @@ namespace eigen
                     bit._parts[i] <<= 1;
                 }   while (bit._parts[i] <= _parts[i]);
                 i++;
-            }   while (_parts[i] && i < Parts);
+            }   while (i < Parts && _parts[i]);
 
             return;
         }

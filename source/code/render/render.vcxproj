@@ -79,6 +79,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="internal\DisplayManager.h" />
     <ClInclude Include="internal\RenderDispatch.h" />
     <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="RenderPort.h" />

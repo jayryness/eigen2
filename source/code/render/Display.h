@@ -24,6 +24,7 @@ namespace eigen
         void                present();
 
     protected:
+                            friend class DisplayManager;
 
                             Display() {}
                             ~Display();
@@ -33,6 +34,7 @@ namespace eigen
     };
 
     typedef RefPtr<Display> DisplayPtr;
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////
 

@@ -201,6 +201,7 @@ void Demo::run()
 
         eigen::ClearStage& clearStage = plan.ptr->addClearStage(displayTargets.ptr);
         clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
+        clearStage.colors[0] = eigen::Float4::Xyzw(0.7f, 0.8f, 0.9f, 0.f);
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.addPort(port);
@@ -262,7 +263,7 @@ void Demo::run()
 
             worklist->finish();
 
-            renderer.commenceWork();
+            renderer.commenceWork(display.ptr);
 
             //Eigen::Renderer& renderer = system.GetRenderer();
             //Eigen::RenderContext* context = renderer.BeginContext();

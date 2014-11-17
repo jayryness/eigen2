@@ -106,6 +106,8 @@ namespace eigen
         Stage* stage = worklist->_stages;
         for (unsigned stageCount = worklist->_stagesCount; stageCount > 0; stageCount--, stage = stage->advance())
         {
+            stage->targets->_touch(_renderer.getFrameNumber());
+
             stageJobEnd->stage = stage;
             stageJobEnd->batches = nullptr;
             stageJobEnd->batchStart = 0;

@@ -116,8 +116,11 @@ namespace eigen
             }
             Stage* start = (Stage*)AllocateMemory<char>(_manager->_allocator, _bytesCapacity);
             Allocation::From(start)->_metadataInt = 1; // sneaky refcount in allocation metadata
-            memcpy(start, _start, (char*)_end - (char*)_start);
-            FreeMemory(_start);
+            if (_start)
+            {
+                memcpy(start, _start, (char*)_end - (char*)_start);
+                FreeMemory(_start);
+            }
 
             ptrdiff_t offset = (char*)start - (char*)_start;
             (char*&)_end += offset;

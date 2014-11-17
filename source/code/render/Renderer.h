@@ -1,12 +1,12 @@
 #pragma once
 
 #include "internal/RenderDispatch.h"
+#include "internal/DisplayManager.h"
 #include "core/RefCounted.h"
 #include "core/PodDeque.h"
 #include "core/Error.h"
 #include "Worklist.h"
 #include "RenderPlan.h"
-#include "Display.h"
 #include "Texture.h"
 #include "TargetSet.h"
 #include "RenderPort.h"
@@ -41,11 +41,11 @@ namespace eigen
                                ~Renderer();
 
         Error                   initialize(const Config& config);
-        void                    cleanup();          // Optional, handled by dtor
+        void                    cleanup();                      // For destruction order issues (optional, handled by dtor)
 
-        Worklist*               openWorklist(RenderPlan* plan);
+        Worklist*               openWorklist(RenderPlan* plan); // Call this to begin rendering
 
-        void                    commenceWork();
+        void                    commenceWork(Display* display); // TODO no display here, display manager tracks dirty targets
 
         RenderPort*             getPort(const char* name);
         unsigned                getFrameNumber() const;

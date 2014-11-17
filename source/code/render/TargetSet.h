@@ -39,6 +39,8 @@ namespace eigen
         const Config&               getConfig() const;
         unsigned                    getTextureCount() const;
 
+        void                        _touch(unsigned) const;
+
     protected:
 
                                     TargetSet();
@@ -49,6 +51,8 @@ namespace eigen
 
         Config                      _config;
         unsigned                    _textureCount = 0;
+
+        mutable unsigned            _frameNumberDirtied = 0;
 
     };
 
@@ -89,4 +93,10 @@ namespace eigen
     {
         platformDetach();
     }
+
+    inline void TargetSet::_touch(unsigned frameNumber) const
+    {
+        _frameNumberDirtied = frameNumber;
+    }
+
 }
