@@ -69,7 +69,7 @@ namespace eigen
         return worklist;
     }
 
-    void Renderer::commenceWork(Display* display)
+    void Renderer::commenceWork()
     {
         // Ensure that no worklists were left open
         // Also reverse the open list to put it back into API order to aid debugging
@@ -95,7 +95,7 @@ namespace eigen
         //}
         _workCoordinator.sync();
 
-        display->present(); // TODO
+        _displayManager.presentAll(_frameNumber);
 
         _workCoordinator.prepareWork(head);
         _workCoordinator.kick();

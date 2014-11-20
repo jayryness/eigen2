@@ -48,7 +48,7 @@ namespace eigen
         return worklist;
     }
 
-    void Worklist::commitBatch(Batch* batch, const RenderPort* port, float sortDepth)
+    void Worklist::commitBatch(RenderBatch* batch, const RenderPort* port, float sortDepth)
     {
         // Batch is ignored if the pipeline doesn't listen to this port
 

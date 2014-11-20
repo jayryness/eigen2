@@ -263,7 +263,7 @@ void Demo::run()
 
             worklist->finish();
 
-            renderer.commenceWork(display.ptr);
+            renderer.commenceWork();
 
             //Eigen::Renderer& renderer = system.GetRenderer();
             //Eigen::RenderContext* context = renderer.BeginContext();

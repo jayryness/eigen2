@@ -10,7 +10,6 @@
 #include "Texture.h"
 #include "TargetSet.h"
 #include "RenderPort.h"
-#include <thread>
 
 namespace eigen
 {
@@ -24,8 +23,6 @@ namespace eigen
                                 struct PlatformConfig;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //
-        // User API
         //
 
         struct Config
@@ -45,7 +42,7 @@ namespace eigen
 
         Worklist*               openWorklist(RenderPlan* plan); // Call this to begin rendering
 
-        void                    commenceWork(Display* display); // TODO no display here, display manager tracks dirty targets
+        void                    commenceWork();
 
         RenderPort*             getPort(const char* name);
         unsigned                getFrameNumber() const;
@@ -66,6 +63,8 @@ namespace eigen
         friend void             DestroyRefCounted(TargetSet*);
         friend void             DestroyRefCounted(RenderPlan*);
 
+        friend class            DisplayManager;
+
         struct DeadMeat
         {
             void*               object;
@@ -83,7 +82,7 @@ namespace eigen
 
         Config                  _config;
 
-        BlockAllocator          _displayAllocator;
+        DisplayManager          _displayManager;
         BlockAllocator          _textureAllocator;
         BlockAllocator          _targetSetAllocator;
         RenderPlanManager       _planManager;
@@ -115,6 +114,12 @@ namespace eigen
     inline Renderer::Renderer()
         : _workCoordinator(*this)
     {
+    }
+
+    inline DisplayPtr Renderer::createDisplay()
+    {
+        Display* display = _displayManager.createDisplay();
+        return display;
     }
 
     inline RenderPort* Renderer::getPort(const char* name) throw()

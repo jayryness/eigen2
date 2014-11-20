@@ -30,6 +30,8 @@
     <ClInclude Include="Stage.h" />
     <ClInclude Include="internal\RenderDispatch.h" />
     <ClInclude Include="internal\DisplayManager.h" />
+    <ClInclude Include="RenderBatch.h" />
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -59,5 +61,6 @@
     <ClCompile Include="RenderPlan.cpp" />
     <ClCompile Include="internal\RenderDispatch.cpp" />
     <ClCompile Include="dx11\RenderDispatchDx11.cpp" />
+    <ClCompile Include="internal\DisplayManager.cpp" />
   </ItemGroup>
 </Project>

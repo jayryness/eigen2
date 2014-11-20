@@ -67,8 +67,6 @@ namespace eigen
                 job->execute();
             }
 
-            // Wait for sort jobs to finish
-
             // Issue batches
 
             for (unsigned i = 0; i < _stageJobCount; i++)

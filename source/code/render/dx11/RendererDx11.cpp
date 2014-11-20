@@ -10,7 +10,7 @@ namespace eigen
     {
         static_assert(sizeof(PlatformDetails) <= sizeof(Renderer::_platformDetails), "Must increase size of Renderer::_platformDetails");
 
-        _displayAllocator.initialize(config.allocator, sizeof(DisplayDx11), 8);
+        _displayManager.initialize(config.allocator);
         _textureAllocator.initialize(config.allocator, sizeof(TextureDx11), 64);
         _targetSetAllocator.initialize(config.allocator, sizeof(TargetSetDx11), 16);
 
@@ -90,12 +90,6 @@ namespace eigen
         plat.~PlatformDetails();
     }
 
-    DisplayPtr Renderer::createDisplay()
-    {
-        DisplayDx11* display = new(AllocateMemory<DisplayDx11>(&_displayAllocator, 1)) DisplayDx11(*this);
-        return display;
-    }
-
     TexturePtr Renderer::createTexture()
     {
         TextureDx11* texture = new(AllocateMemory<TextureDx11>(&_textureAllocator, 1)) TextureDx11(*this);
@@ -111,6 +105,7 @@ namespace eigen
     void DestroyRefCounted(Display* display)
     {
         Renderer& renderer = ((DisplayDx11*)display)->_renderer;
+        renderer._displayManager.unregisterDisplay(display);
         renderer.scheduleDeletion((DisplayDx11*)display, 1);
     }
 

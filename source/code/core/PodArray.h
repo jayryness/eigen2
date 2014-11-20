@@ -61,13 +61,13 @@ namespace eigen
 
     template<typename T> PodArray<T>::~PodArray()
     {
-        Allocation::FreeMemory(_elements);
+        FreeMemory(_elements);
     }
 
     template<typename T> void PodArray<T>::initialize(Allocator* allocator, unsigned initialCapacity)
     {
         assert(_elements == nullptr);   // already initialized
-        _elements = Allocation::AllocateMemory<T>(initialCapacity);
+        _elements = AllocateMemory<T>(allocator, initialCapacity);
         _capacity = initialCapacity;
     }
 
@@ -119,9 +119,9 @@ namespace eigen
             {
                 capacity = std::max(capacity, _capacity*2);
             }
-            T* elements = Allocation::AllocateMemory<T>(capacity);
+            T* elements = AllocateMemory<T>(Allocation::From(_elements)->_allocator, capacity);
             memcpy(elements, _elements, _count);
-            Allocation::FreeMemory(_elements);
+            FreeMemory(_elements);
             _elements = elements;
             _capacity = capacity;
         }

@@ -38,6 +38,7 @@ namespace eigen
         hr = swapChain->GetBuffer(0, __uuidof(surface), (void**) surface.GetAddressOf());
         assert(hr == S_OK);
 
+        display->_hwnd = (HWND)windowHandle;
         display->_target = renderer.createTexture();
         ((TextureDx11*)display->_target.ptr)->initWithTexture2D(surface.Get());
 
@@ -49,7 +50,52 @@ namespace eigen
     void Display::present()
     {
         DisplayDx11* display = (DisplayDx11*)this;
-        HRESULT hr = display->_swapChain.Get()->Present(0, 0);
+        IDXGISwapChain* swapChain = display->_swapChain.Get();
+
+        HRESULT hr = swapChain->Present(0, 0);
         assert(hr == S_OK);
+
+        // While we're at it... resize target if window changed
+
+        //RECT rect;
+        //GetClientRect(display->_hwnd, &rect);
+
+        //int width = rect.right - rect.left;
+        //int height = rect.bottom - rect.top;
+
+        //const Texture::Config& textureInfo = display->_target.ptr->getConfig();
+        //if (textureInfo.width != width || textureInfo.height != height)
+        //{
+        //    display->_target.ptr->detach();
+        //    swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+
+        //    ComPtr<ID3D11Texture2D> surface = nullptr;
+        //    hr = swapChain->GetBuffer(0, __uuidof(surface), (void**)surface.GetAddressOf());
+        //    assert(hr == S_OK);
+
+        //    ((TextureDx11*)display->_target.ptr)->initWithTexture2D(surface.Get());
+        //}
     }
+
+    void DisplayManager::platformInit(Allocator* allocator)
+    {
+        _blockAllocator.initialize(allocator, sizeof(DisplayDx11), 8);
+    }
+
+    Display* DisplayManager::createDisplay()
+    {
+        Renderer* renderer = StructFromMember(&Renderer::_displayManager, this);
+        DisplayDx11* display = new(AllocateMemory<DisplayDx11>(&_blockAllocator, 1)) DisplayDx11(*renderer);
+
+        display->_index = _displays.getCount();
+        _displays.addLast() = display;
+
+        return display;
+    }
+
+    void DisplayManager::unregisterDisplay(Display* display)
+    {
+        _displays.remove(display->_index);
+    }
+
 }

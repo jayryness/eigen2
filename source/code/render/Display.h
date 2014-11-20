@@ -21,16 +21,16 @@ namespace eigen
 
         Texture*            getTarget() const;
 
-        void                present();
-
     protected:
                             friend class DisplayManager;
 
                             Display() {}
                             ~Display();
 
-        TexturePtr         _target;
-        Display*           _next    = nullptr;
+        void                present();
+
+        TexturePtr          _target;
+        int                 _index = 0;
     };
 
     typedef RefPtr<Display> DisplayPtr;

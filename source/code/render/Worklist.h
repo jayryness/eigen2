@@ -8,7 +8,7 @@ namespace eigen
 {
 
     class Renderer;
-    struct Batch;
+    class RenderBatch;
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -27,10 +27,8 @@ namespace eigen
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
-        // User API
-        //
 
-        void                commitBatch(Batch* batch, const RenderPort* port, float sortDepth);
+        void                commitBatch(RenderBatch* batch, const RenderPort* port, float sortDepth);
         void                finish();
 
         //
@@ -49,7 +47,7 @@ namespace eigen
         struct SortBatch
         {
             uint64_t        sortKey;
-            Batch*          batch;
+            RenderBatch*    batch;
 
             bool            operator<(const SortBatch& other) const;
         };

@@ -47,6 +47,15 @@ namespace eigen
 
         case Stage::Type::Batch:
 
+            plat.immContext->OMSetRenderTargets(targets->getTextureCount(), targets->_targetViews[0].GetAddressOf(), targets->_depthStencilView.Get());
+            // TODO - if UAVs present, OMSetRenderTargetsAndUnorderedAccessViews; if compute shader present, CSSetUnorderedAccessViews
+
+            // TODO bind shader to context
+
+            for (unsigned i = stageJob.batchStart; i < stageJob.batchEnd; i++)
+            {
+                stageJob.batches[i];    // TODO
+            }
 
             return;
 

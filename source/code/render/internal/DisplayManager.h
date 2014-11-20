@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Display.h"
+#include "core/PodArray.h"
 
 namespace eigen
 {
@@ -16,13 +17,21 @@ namespace eigen
                             DisplayManager();
                             ~DisplayManager();
 
-        void                presetAll();
+        void                initialize(Allocator* allocator);
+
+        Display*            createDisplay();
+        void                unregisterDisplay(Display* display);
+
+        void                presentAll(unsigned frameNumber);
 
     private:
 
-                            enum { MaxDisplays = 16 };
+        friend void         DestroyRefCounted(Display*);
 
-        Display*            _displays[MaxDisplays];
+        void                platformInit(Allocator* allocator);
+
+        BlockAllocator      _blockAllocator;
+        PodArray<Display*>  _displays;
     };
 
 
