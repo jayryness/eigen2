@@ -32,6 +32,9 @@
     <ClInclude Include="internal\DisplayManager.h" />
     <ClInclude Include="RenderBatch.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="RenderStruct.h" />
+    <ClInclude Include="RenderBuffer.h" />
+    <ClInclude Include="dx11\RenderBufferDx11.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -62,5 +65,7 @@
     <ClCompile Include="internal\RenderDispatch.cpp" />
     <ClCompile Include="dx11\RenderDispatchDx11.cpp" />
     <ClCompile Include="internal\DisplayManager.cpp" />
+    <ClCompile Include="RenderBuffer.cpp" />
+    <ClCompile Include="dx11\RenderBufferDx11.cpp" />
   </ItemGroup>
 </Project>

@@ -83,7 +83,7 @@ namespace eigen
 
         // Commit batch to list
 
-        BatchList& batchList = _batchLists[port->getIndex()];
+        BatchList& batchList = _batchLists[port->getPosition()];
         //entry->next = batchList.head.exchange(entry, std::memory_order_relaxed);  // [cb->next = head; head = cb;]
         entry->next = batchList.head;
         batchList.head = entry;

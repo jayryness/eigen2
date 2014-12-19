@@ -10,44 +10,44 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Key
+    // Flag
     //
-    // An interned string identifier with metadata for enumeration and set membership
+    // An bit flag with interned string identifier
     //
 
-    template<class T, int MAX> class Key
+    template<class T, int MAX> class Flag
     {
     public:
         typedef BitSet<MAX> Set;
 
-        enum              { Max = MAX };
+        enum                { Max = MAX };
 
         const char*         getName() const;
-        unsigned            getIndex() const;
+        unsigned            getPosition() const;
         const BitSet<MAX>&  getBit() const;
 
     protected:
 
-                            Key() {}
+                            Flag() {}
 
         const char*        _name;
         Set                _bit;
-        unsigned           _index;
+        unsigned           _position;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Keysmith
+    // FlagIssuer
     //
-    // Issues keys
+    // Manages flags and their strings
     //
 
-    template<class T> class Keysmith
+    template<class T> class FlagIssuer
     {
     public:
 
-                            Keysmith();
-                           ~Keysmith();
+                            FlagIssuer();
+                            ~FlagIssuer();
 
         void                initialize(Allocator* allocator, unsigned initialStringsCapacity);
 
@@ -56,54 +56,54 @@ namespace eigen
 
     protected:
 
-        struct Key        : public T
+        struct Flag :       public T
         {
-                            friend class Keysmith;
+                            friend class FlagIssuer;
         };
 
-        enum {              TableSize = StaticNextPow2<T::Max*2>::Result };
+        enum                { TableSize = StaticNextPow2<T::Max*2>::Result };
 
-        unsigned           _hashes      [TableSize];
-        int16_t            _indices     [TableSize];
-        Key                _keys        [T::Max];
-        unsigned           _keyCount            = 0;
+        unsigned            _hashes[TableSize];
+        int16_t             _indices[TableSize];
+        Flag                _inventory[T::Max];
+        unsigned            _count              = 0;
 
-        char*              _strings             = nullptr;
-        unsigned           _stringsEnd          = 0;
-        unsigned           _stringsCapacity     = 0;
+        char*               _strings            = nullptr;
+        unsigned            _stringsEnd         = 0;
+        unsigned            _stringsCapacity    = 0;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    template<class T, int MAX> const char* Key<T,MAX>::getName() const
+    template<class T, int MAX> const char* Flag<T,MAX>::getName() const
     {
         return _name;
     }
 
-    template<class T, int MAX> unsigned Key<T,MAX>::getIndex() const
+    template<class T, int MAX> unsigned Flag<T,MAX>::getPosition() const
     {
-        return _index;
+        return _position;
     }
 
-    template<class T, int MAX> const BitSet<MAX>& Key<T,MAX>::getBit() const
+    template<class T, int MAX> const BitSet<MAX>& Flag<T,MAX>::getBit() const
     {
         return _bit;
     }
 
-    template<class T> Keysmith<T>::Keysmith()
+    template<class T> FlagIssuer<T>::FlagIssuer()
     {
         memset(_hashes, 0, sizeof(_hashes));
         memset(_indices, -1, sizeof(_indices));
     }
 
-    template<class T> Keysmith<T>::~Keysmith()
+    template<class T> FlagIssuer<T>::~FlagIssuer()
     {
         FreeMemory(_strings);
     }
 
-    template<class T> void Keysmith<T>::initialize(Allocator* allocator, unsigned initialStringsCapacity)
+    template<class T> void FlagIssuer<T>::initialize(Allocator* allocator, unsigned initialStringsCapacity)
     {
         assert(_strings == nullptr);
         _strings = AllocateMemory<char>(allocator, initialStringsCapacity);
@@ -111,12 +111,12 @@ namespace eigen
         _stringsCapacity = initialStringsCapacity;
     }
 
-    template<class T> unsigned Keysmith<T>::getCount() const
+    template<class T> unsigned FlagIssuer<T>::getCount() const
     {
-        return _keyCount;
+        return _count;
     }
 
-    template<class T> T* Keysmith<T>::issue(const char* name) throw()
+    template<class T> T* FlagIssuer<T>::issue(const char* name) throw()
     {
         unsigned nameLength = (unsigned)strlen(name);
 
@@ -130,8 +130,8 @@ namespace eigen
             {
                 // Found it
 
-                T* key = _keys + _indices[slot];
-                return key;
+                T* flag = _inventory + _indices[slot];
+                return flag;
             }
 
             slot = (slot+1) & (TableSize-1);
@@ -139,7 +139,7 @@ namespace eigen
 
         // It's not in the table - can we add it?
 
-        if (_keyCount == T::Max)
+        if (_count == T::Max)
         {
             assert(false);
             return nullptr;
@@ -158,21 +158,21 @@ namespace eigen
         }
         memcpy(_strings + _stringsEnd, name, nameLength + 1);
 
-        // Populate the slot with the new key
+        // Populate the slot with the new flag
 
         _hashes[slot] = hash;
-        _indices[slot] = (int16_t)_keyCount;
+        _indices[slot] = (int16_t)_count;
 
-        Key* key = _keys + _keyCount;
-        key->_name = _strings + _stringsEnd;
-        key->_bit.clear();
-        key->_bit.set(_keyCount, true);
-        key->_index = _keyCount;
+        Flag* flag = _inventory + _count;
+        flag->_name = _strings + _stringsEnd;
+        flag->_bit.clear();
+        flag->_bit.set(_count, true);
+        flag->_position = _count;
 
         _stringsEnd += nameLength + 1;
-        _keyCount++;
+        _count++;
 
-        return key;
+        return flag;
     }
 
 }

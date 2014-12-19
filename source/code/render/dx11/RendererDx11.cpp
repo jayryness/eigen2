@@ -1,5 +1,6 @@
 #include "RendererDx11.h"
 #include "DisplayDx11.h"
+#include "RenderBufferDx11.h"
 #include "TargetSetDx11.h"
 #include <cassert>
 #include <new>
@@ -12,6 +13,7 @@ namespace eigen
 
         _displayManager.initialize(config.allocator);
         _textureAllocator.initialize(config.allocator, sizeof(TextureDx11), 64);
+        _bufferAllocator.initialize(config.allocator, sizeof(RenderBufferDx11), 64);
         _targetSetAllocator.initialize(config.allocator, sizeof(TargetSetDx11), 16);
 
         PlatformDetails& plat = getPlatformDetails();
@@ -96,6 +98,12 @@ namespace eigen
         return texture;
     }
 
+    RenderBufferPtr Renderer::createBuffer()
+    {
+        RenderBufferDx11* buffer = new(AllocateMemory<RenderBufferDx11>(&_bufferAllocator, 1)) RenderBufferDx11(*this);
+        return buffer;
+    }
+
     TargetSetPtr Renderer::createTargetSet()
     {
         TargetSetDx11* targetSet = new(AllocateMemory<TargetSetDx11>(&_targetSetAllocator, 1)) TargetSetDx11(*this);
@@ -113,6 +121,12 @@ namespace eigen
     {
         Renderer& renderer = ((TextureDx11*)texture)->_renderer;
         renderer.scheduleDeletion((TextureDx11*)texture, 1);
+    }
+
+    void DestroyRefCounted(RenderBuffer* buffer)
+    {
+        Renderer& renderer = ((RenderBufferDx11*)buffer)->_renderer;
+        renderer.scheduleDeletion((RenderBufferDx11*)buffer, 1);
     }
 
     void DestroyRefCounted(TargetSet* targetSet)

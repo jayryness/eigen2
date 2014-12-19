@@ -188,6 +188,16 @@ void Demo::run()
             displayTargets.ptr->initialize(cfg);
         }
 
+        {
+            eigen::RenderBuffer::Config cfg;
+            cfg.elementStride = 16;
+            cfg.elementCount = 32;
+            cfg.bindings |= eigen::RenderBuffer::Bindings::RenderTarget;
+
+            eigen::RenderBufferPtr buffer = renderer.createBuffer();
+            buffer.ptr->initialize(cfg);
+        }
+
         //Eigen::Display* display = system.GetDisplaySystem().NextDisplay();
 
         //Eigen::Renderer& renderer = system.GetRenderer();

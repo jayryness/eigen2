@@ -1,72 +1,71 @@
 #pragma once
 
 #include "core/RefCounted.h"
-#include "core/Key.h"
+#include "core/Flag.h"
 
 namespace eigen
 {
 
-    // TODO clean this up
+    struct RenderStruct;
 
-    enum
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // ShaderAspect
+    //
+    // Represents a specific configuration of the shader pipeline for a certain look or
+    // technique. It's common for a shader to have both "normal" and "depth only" aspects, the
+    // latter being used to render shadowmaps.
+    //
+
+    enum {  MaxShaderAspects        = 64 };
+
+    class ShaderAspect :            public Flag<ShaderAspect, MaxShaderAspects>
     {
-        MaxShaderVariants   = 128,
-        MaxBufferAttributes = 64,
+    protected:                      ShaderAspect() {}
     };
 
-    enum { MaxBufferAttributes = 64 };
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // BufferSemantic
+    //
 
-    class ShaderVariantIdentifier : public Key<ShaderVariantIdentifier, MaxShaderVariants>
-    {
-    protected:
+    //enum {  MaxBufferSemantics      = 64 };
 
-        ShaderVariantIdentifier() {}
-    };
-
-    class BufferAttribute : public Key<BufferAttribute, MaxBufferAttributes>
-    {
-    protected:
-
-        BufferAttribute() {}
-    };
+    //class BufferSemantic :          public Flag<BufferSemantic, MaxBufferSemantics>
+    //{
+    //protected:                      BufferSemantic() {}
+    //};
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
     // Shader
     //
 
-    class Shader : public RefCounted<Shader>
+    class Shader :                  public RefCounted<Shader>
     {
     public:
 
         struct BufferInfo
         {
-            BufferAttribute::Set            attributes;
-            //DataSpec*                     layout;     // todo
-            unsigned                        maxLength;
+            const char*             semantic;
+            RenderStruct*           layout;
+            unsigned                maxLength;
         };
 
-        struct Style
+        struct Info
         {
-            ShaderVariantIdentifier::Set    variants;
-            const char*                     name;
+            BufferInfo*             buffers;
+            unsigned                bufferCount;
+            ShaderAspect::Set       aspects;
         };
 
-        struct Config
-        {
-            BufferInfo*                     buffers;
-            Style*                          styles;
-            unsigned                        bufferCount;
-            unsigned                        styleCount;
-        };
-
-        const Config&                       GetConfig() const;
+        const Info&                 getInfo() const;
 
     protected:
-                                            Shader(const Config& info);
-                                            ~Shader();
+                                    Shader(const Info& info);
+                                    ~Shader();
 
-        Config                              _config;
+        Info                        _info;
     };
 
 

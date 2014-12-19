@@ -17,7 +17,7 @@
     <ClInclude Include="EnumBits.h" />
     <ClInclude Include="Error.h" />
     <ClInclude Include="hash.h" />
-    <ClInclude Include="Key.h" />
+    <ClInclude Include="Flag.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="PodDeque.h" />
     <ClInclude Include="RefCounted.h" />

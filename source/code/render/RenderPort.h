@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/Key.h"
+#include "core/Flag.h"
 
 namespace eigen
 {
@@ -14,7 +14,7 @@ namespace eigen
 
     enum { MaxRenderPorts = 80 };
 
-    class RenderPort : public Key<RenderPort, MaxRenderPorts>
+    class RenderPort : public Flag<RenderPort, MaxRenderPorts>
     {
     protected:
 

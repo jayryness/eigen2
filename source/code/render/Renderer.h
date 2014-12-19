@@ -8,6 +8,7 @@
 #include "Worklist.h"
 #include "RenderPlan.h"
 #include "Texture.h"
+#include "RenderBuffer.h"
 #include "TargetSet.h"
 #include "RenderPort.h"
 
@@ -49,6 +50,7 @@ namespace eigen
 
         DisplayPtr              createDisplay();
         TexturePtr              createTexture();
+        RenderBufferPtr         createBuffer();
         TargetSetPtr            createTargetSet();
         RenderPlanPtr           createPlan();
 
@@ -60,6 +62,7 @@ namespace eigen
 
         friend void             DestroyRefCounted(Display*);
         friend void             DestroyRefCounted(Texture*);
+        friend void             DestroyRefCounted(RenderBuffer*);
         friend void             DestroyRefCounted(TargetSet*);
         friend void             DestroyRefCounted(RenderPlan*);
 
@@ -84,9 +87,10 @@ namespace eigen
 
         DisplayManager          _displayManager;
         BlockAllocator          _textureAllocator;
+        BlockAllocator          _bufferAllocator;
         BlockAllocator          _targetSetAllocator;
         RenderPlanManager       _planManager;
-        Keysmith<RenderPort>    _portSmith;
+        FlagIssuer<RenderPort>  _portIssuer;
         PodDeque<DeadMeat>      _deadMeat;
 
         int8_t*                 _scratchMem         = 0;
@@ -124,7 +128,7 @@ namespace eigen
 
     inline RenderPort* Renderer::getPort(const char* name) throw()
     {
-        return _portSmith.issue(name);
+        return _portIssuer.issue(name);
     }
 
     inline unsigned Renderer::getFrameNumber() const

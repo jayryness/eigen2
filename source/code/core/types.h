@@ -16,13 +16,16 @@ namespace eigen
         T              _[N];
     };
 
-    typedef FixedN<float, 2>    Float2;
-    typedef FixedN<float, 3>    Float3;
-    typedef FixedN<float, 4>    Float4;
+    template<int N> using FloatN = FixedN<float, N>;
+    template<int N> using IntN   = FixedN<int32_t, N>;
 
-    typedef FixedN<int32_t, 2>  Int2;
-    typedef FixedN<int32_t, 3>  Int3;
-    typedef FixedN<int32_t, 4>  Int4;
+    typedef FloatN<2>   Float2;
+    typedef FloatN<3>   Float3;
+    typedef FloatN<4>   Float4;
+
+    typedef IntN<2>     Int2;
+    typedef IntN<3>     Int3;
+    typedef IntN<4>     Int4;
 
     template<typename T, int N> FixedN<T,N> FixedN<T,N>::Xyzw(T x, T y, T z, T w)
     {

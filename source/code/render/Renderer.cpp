@@ -14,7 +14,7 @@ namespace eigen
         _scratchAllocEnd = _scratchMem + config.scratchSize/2;
 
         _deadMeat.initialize(config.allocator, 64);
-        _portSmith.initialize(config.allocator, 2048);
+        _portIssuer.initialize(config.allocator, 2048);
         _planManager.initialize(config.allocator, 8);
         return platformInit(config);    // see e.g. RendererDx11.cpp
     }
