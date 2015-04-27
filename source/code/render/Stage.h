@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TargetSet.h"
-#include "RenderBin.h"
+#include "RenderPort.h"
 #include "core/types.h"
 
 namespace eigen
@@ -16,7 +16,7 @@ namespace eigen
     // There are three types:
     //
     // - ClearStage clears the targets
-    // - BatchStage renders all batches received by a given RenderBin
+    // - BatchStage renders all batches received by a given RenderPort
     // - FilterStage invokes a shader
     //
 
@@ -83,10 +83,10 @@ namespace eigen
         };
                                 BatchStage();
 
-        void                    attachBin(const RenderBin* bin);
+        void                    addPort(const RenderPort* port);
 
-        RenderBin::Set          attachedBins;
-        SortType                sortType        = SortType::Performance;
+        RenderPort::Set         ports;
+        SortType                sortType    = SortType::Performance;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ namespace eigen
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    EIGEN_DEFINE_BIT_MASK_OPS(ClearStage::Flags)
+    EIGEN_DEFINE_ENUM_BIT_OPS(ClearStage::Flags)
 
     inline ClearStage::ClearStage()
     {
@@ -118,9 +118,9 @@ namespace eigen
         type = Type::Batch;
     }
 
-    inline void BatchStage::attachBin(const RenderBin* bin)
+    inline void BatchStage::addPort(const RenderPort* port)
     {
-        attachedBins |= bin->getBit();
+        ports |= port->getBit();
     }
 
     inline FilterStage::FilterStage()

@@ -25,16 +25,16 @@
       <Filter>dx11</Filter>
     </ClInclude>
     <ClInclude Include="Worklist.h" />
+    <ClInclude Include="RenderPort.h" />
     <ClInclude Include="RenderPlan.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="internal\RenderDispatch.h" />
     <ClInclude Include="internal\DisplayManager.h" />
     <ClInclude Include="RenderBatch.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="RenderStruct.h" />
     <ClInclude Include="RenderBuffer.h" />
     <ClInclude Include="dx11\RenderBufferDx11.h" />
-    <ClInclude Include="RenderBin.h" />
-    <ClInclude Include="Effect.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

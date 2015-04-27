@@ -201,11 +201,11 @@ void Demo::run()
         //Eigen::Display* display = system.GetDisplaySystem().NextDisplay();
 
         //Eigen::Renderer& renderer = system.GetRenderer();
-        const eigen::RenderBin* port = renderer.getBin("One");
-        renderer.getBin("One");
-        renderer.getBin("Two");
-        renderer.getBin("Three");
-        port = renderer.getBin("Four");
+        const eigen::RenderPort* port = renderer.getPort("One");
+        renderer.getPort("One");
+        renderer.getPort("Two");
+        renderer.getPort("Three");
+        port = renderer.getPort("Four");
 
         eigen::RenderPlanPtr plan = renderer.createPlan();
 
@@ -214,18 +214,18 @@ void Demo::run()
         clearStage.colors[0] = eigen::Float4::Xyzw(0.7f, 0.8f, 0.9f, 0.f);
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
-            batchStage.attachBin(port);
+            batchStage.addPort(port);
         }
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::IncreasingDepth;
-            batchStage.attachBin(port);
+            batchStage.addPort(port);
         }
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::DecreasingDepth;
-            batchStage.attachBin(port);
-            batchStage.attachBin(renderer.getBin("Foo"));
+            batchStage.addPort(port);
+            batchStage.addPort(renderer.getPort("Foo"));
         }
         error = plan.ptr->validate();
         if (Failed(error))
@@ -327,7 +327,7 @@ int main(int argc, const char** argv)
         printf("----------------\n");
     }
 
-    printf("\n%s exit in ", result == 0 ? "Clean" : "Dirty");
+    printf("\nExiting %s in ", result == 0 ? "cleanly" : "with error code");
     for (int secs = 3; secs > 0; secs--)
     {
         printf("%d...", secs);

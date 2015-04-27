@@ -10,12 +10,12 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // SoftBitFlag
+    // Flag
     //
-    // A dynamically-issued bit flag with interned string identifier
+    // An bit flag with interned string identifier
     //
 
-    template<class T, int MAX> class SoftBitFlag
+    template<class T, int MAX> class Flag
     {
     public:
         typedef BitSet<MAX> Set;
@@ -28,7 +28,7 @@ namespace eigen
 
     protected:
 
-                            SoftBitFlag() {}
+                            Flag() {}
 
         const char*        _name;
         Set                _bit;
@@ -37,17 +37,17 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // SoftBitFlagAgent
+    // FlagIssuer
     //
-    // Issues bit identifiers
+    // Manages flags and their strings
     //
 
-    template<class T> class SoftBitFlagAgent
+    template<class T> class FlagIssuer
     {
     public:
 
-                            SoftBitFlagAgent();
-                            ~SoftBitFlagAgent();
+                            FlagIssuer();
+                            ~FlagIssuer();
 
         void                initialize(Allocator* allocator, unsigned initialStringsCapacity);
 
@@ -58,7 +58,7 @@ namespace eigen
 
         struct Flag :       public T
         {
-                            friend class SoftBitFlagAgent;
+                            friend class FlagIssuer;
         };
 
         enum                { TableSize = StaticNextPow2<T::Max*2>::Result };
@@ -77,33 +77,33 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    template<class T, int MAX> const char* SoftBitFlag<T,MAX>::getName() const
+    template<class T, int MAX> const char* Flag<T,MAX>::getName() const
     {
         return _name;
     }
 
-    template<class T, int MAX> unsigned SoftBitFlag<T,MAX>::getPosition() const
+    template<class T, int MAX> unsigned Flag<T,MAX>::getPosition() const
     {
         return _position;
     }
 
-    template<class T, int MAX> const BitSet<MAX>& SoftBitFlag<T,MAX>::getBit() const
+    template<class T, int MAX> const BitSet<MAX>& Flag<T,MAX>::getBit() const
     {
         return _bit;
     }
 
-    template<class T> SoftBitFlagAgent<T>::SoftBitFlagAgent()
+    template<class T> FlagIssuer<T>::FlagIssuer()
     {
         memset(_hashes, 0, sizeof(_hashes));
         memset(_indices, -1, sizeof(_indices));
     }
 
-    template<class T> SoftBitFlagAgent<T>::~SoftBitFlagAgent()
+    template<class T> FlagIssuer<T>::~FlagIssuer()
     {
         FreeMemory(_strings);
     }
 
-    template<class T> void SoftBitFlagAgent<T>::initialize(Allocator* allocator, unsigned initialStringsCapacity)
+    template<class T> void FlagIssuer<T>::initialize(Allocator* allocator, unsigned initialStringsCapacity)
     {
         assert(_strings == nullptr);
         _strings = AllocateMemory<char>(allocator, initialStringsCapacity);
@@ -111,16 +111,16 @@ namespace eigen
         _stringsCapacity = initialStringsCapacity;
     }
 
-    template<class T> unsigned SoftBitFlagAgent<T>::getCount() const
+    template<class T> unsigned FlagIssuer<T>::getCount() const
     {
         return _count;
     }
 
-    template<class T> T* SoftBitFlagAgent<T>::issue(const char* name) throw()
+    template<class T> T* FlagIssuer<T>::issue(const char* name) throw()
     {
         unsigned nameLength = (unsigned)strlen(name);
 
-        // Find it if it already exists
+        // Find the port
 
         unsigned hash = Hash32(name, nameLength);
         unsigned slot = hash & (TableSize-1);

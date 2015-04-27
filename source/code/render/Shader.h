@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/RefCounted.h"
-#include "core/SoftBitFlag.h"
+#include "core/Flag.h"
 
 namespace eigen
 {
@@ -10,17 +10,18 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // EffectAspect
+    // ShaderAspect
     //
     // Represents a specific configuration of the shader pipeline for a certain look or
-    // technique. For example, a "depth only" aspect might be used to render shadowmaps.
+    // technique. It's common for a shader to have both "normal" and "depth only" aspects, the
+    // latter being used to render shadowmaps.
     //
 
-    enum {  MaxEffectAspects        = 64 };
+    enum {  MaxShaderAspects        = 64 };
 
-    class EffectAspect :            public SoftBitFlag<EffectAspect, MaxEffectAspects>
+    class ShaderAspect :            public Flag<ShaderAspect, MaxShaderAspects>
     {
-    protected:                      EffectAspect() {}
+    protected:                      ShaderAspect() {}
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -37,13 +38,10 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Effect
-    //
-    // A configuration of the entire programmable GPU pipeline, including all applicable
-    // shader stages and render states.
+    // Shader
     //
 
-    class Effect :                  public RefCounted<Effect>
+    class Shader :                  public RefCounted<Shader>
     {
     public:
 
@@ -58,14 +56,14 @@ namespace eigen
         {
             BufferInfo*             buffers;
             unsigned                bufferCount;
-            EffectAspect::Set       aspects;
+            ShaderAspect::Set       aspects;
         };
 
         const Info&                 getInfo() const;
 
     protected:
-                                    Effect(const Info& info);
-                                    ~Effect();
+                                    Shader(const Info& info);
+                                    ~Shader();
 
         Info                        _info;
     };
