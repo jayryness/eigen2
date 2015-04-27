@@ -3,7 +3,7 @@
 #include "Format.h"
 #include "core/RefCounted.h"
 #include "core/Error.h"
-#include "core/EnumBits.h"
+#include "core/BitMaskOps.h"
 
 namespace eigen
 {
@@ -86,7 +86,7 @@ namespace eigen
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    EIGEN_DEFINE_ENUM_BIT_OPS(Texture::Flags)
+    EIGEN_DEFINE_BIT_MASK_OPS(Texture::Flags)
 
     inline Texture::Texture()
     {

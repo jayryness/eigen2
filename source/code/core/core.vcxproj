@@ -14,10 +14,10 @@
     <ClInclude Include="memory.h" />
     <ClInclude Include="PodArray.h" />
     <ClInclude Include="BitSet.h" />
-    <ClInclude Include="EnumBits.h" />
+    <ClInclude Include="BitMaskOps.h" />
     <ClInclude Include="Error.h" />
     <ClInclude Include="hash.h" />
-    <ClInclude Include="Flag.h" />
+    <ClInclude Include="SoftBitFlag.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="PodDeque.h" />
     <ClInclude Include="RefCounted.h" />

@@ -73,7 +73,7 @@ namespace eigen
         //    hr = swapChain->GetBuffer(0, __uuidof(surface), (void**)surface.GetAddressOf());
         //    assert(hr == S_OK);
 
-        // TODO TargetSets' RenderTargetViews still holding refs to it
+        // TODO TargetSets' RenderTargetViews still holding refs to it... just need to walk them all and recreate them
 
         //    ((TextureDx11*)display->_target.ptr)->initWithTexture2D(surface.Get());
         //}

@@ -43,8 +43,8 @@ namespace eigen
             EIGEN_RETURN_ERROR("RenderPlan was invalid before addStages. Reason: \"%s\"", error.getText());
         }
 
-        RenderPort::Set ports;
-        RenderPort::Set sortMasks[BatchStage::SortType::Count];
+        RenderBin::Set bins;
+        RenderBin::Set sortMasks[BatchStage::SortType::Count];
         unsigned bytes = 0;
         for (unsigned i = 0; i < stageCount; i++)
         {
@@ -60,16 +60,16 @@ namespace eigen
             if (stages[i]->type == Stage::Type::Batch)
             {
                 BatchStage* stage = (BatchStage*)stages[i];
-                if (stage->ports.isEmpty())
+                if (stage->attachedBins.isEmpty())
                 {
-                    EIGEN_RETURN_ERROR("Stage %d specifies no ports", (long)i);
+                    EIGEN_RETURN_ERROR("Stage %d specifies no bins", (long)i);
                 }
                 if (stage->sortType >= BatchStage::SortType::Count)
                 {
                     EIGEN_RETURN_ERROR("Stage %d has invalid sort type", (long)i);
                 }
-                ports |= stage->ports;
-                sortMasks[stage->sortType] |= stage->ports;
+                bins |= stage->attachedBins;
+                sortMasks[stage->sortType] |= stage->attachedBins;
             }
 
             bytes += size;
@@ -86,7 +86,7 @@ namespace eigen
         }
 
         _validated = _end;
-        _ports = ports;
+        _binMask = bins;
         memcpy(_sortMasks, sortMasks, sizeof(_sortMasks));
         _count += stageCount;
 
@@ -95,7 +95,7 @@ namespace eigen
 
     void RenderPlan::reset()
     {
-        _ports.clear();
+        _binMask.clear();
         memset(_sortMasks, 0, sizeof(_sortMasks));
         _end = _validated = _start;
         _count = 0;
@@ -141,16 +141,16 @@ namespace eigen
             if (_validated->type == Stage::Type::Batch)
             {
                 BatchStage* stage = (BatchStage*)_validated; 
-                if (stage->ports.isEmpty())
+                if (stage->attachedBins.isEmpty())
                 {
-                    EIGEN_RETURN_ERROR("BatchStage specifies no ports", nullptr);
+                    EIGEN_RETURN_ERROR("BatchStage specifies no bins", nullptr);
                 }
                 if (stage->sortType >= BatchStage::SortType::Count)
                 {
                     EIGEN_RETURN_ERROR("BatchStage has invalid sort type", nullptr);
                 }
-                _ports |= stage->ports;
-                _sortMasks[stage->sortType] |= stage->ports;
+                _binMask |= stage->attachedBins;
+                _sortMasks[stage->sortType] |= stage->attachedBins;
             }
 
             _validated = _validated->advance();

@@ -70,6 +70,7 @@
       </PrecompiledHeader>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4530</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -85,9 +86,9 @@
     <ClInclude Include="internal\RenderDispatch.h" />
     <ClInclude Include="RenderBuffer.h" />
     <ClInclude Include="RenderPlan.h" />
-    <ClInclude Include="RenderPort.h" />
+    <ClInclude Include="RenderBin.h" />
     <ClInclude Include="RenderStruct.h" />
-    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Effect.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="Worklist.h" />
     <ClInclude Include="Display.h" />

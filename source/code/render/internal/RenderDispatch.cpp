@@ -133,10 +133,10 @@ namespace eigen
             bool isDepthSort = (batchStage->sortType == BatchStage::SortType::IncreasingDepth || batchStage->sortType == BatchStage::SortType::DecreasingDepth);
 
             unsigned count = 0;
-            batchStage->ports.forEach(
-                [&](unsigned portIndex, const RenderPort::Set& portBit)
+            batchStage->attachedBins.forEach(
+                [&](unsigned binIndex, const RenderBin::Set& )
                 {
-                    count += worklist->_batchLists[portIndex].count;
+                    count += worklist->_batchLists[binIndex].count;
                 }
             );
 
@@ -145,19 +145,19 @@ namespace eigen
 
             submissionCost += count;
 
-            Worklist::SortCacheEntry& sortCacheEntry = isDepthSort ? worklist->findCachedDepthSort(batchStage->ports) : worklist->findCachedPerfSort(batchStage->ports);
+            Worklist::SortCacheEntry& sortCacheEntry = isDepthSort ? worklist->findCachedDepthSort(batchStage->attachedBins) : worklist->findCachedPerfSort(batchStage->attachedBins);
             if (sortCacheEntry.cached == nullptr)
             {
                 SortJob* job = createSortJob(worklist, count);
                 job->sortType = isDepthSort ? BatchStage::SortType::IncreasingDepth : BatchStage::SortType::Performance;
-                job->cachedSort.ports = batchStage->ports;
+                job->cachedSort.binMask = batchStage->attachedBins;
 
                 sortCacheEntry.cached = &job->cachedSort;
 
                 *sortJobTail = job;
                 sortJobTail = &job->next;
             }
-            assert(sortCacheEntry.cached->ports == batchStage->ports && sortCacheEntry.cached->count == count);
+            assert(sortCacheEntry.cached->binMask == batchStage->attachedBins && sortCacheEntry.cached->count == count);
 
             stageJobEnd->batches = sortCacheEntry.cached->batches;
             stageJobEnd->batchStart = 0;
@@ -221,8 +221,8 @@ namespace eigen
         unsigned count = 0;
 
         // Copy batches from slots into sort array
-        cachedSort.ports.forEach(
-            [&](unsigned index, const RenderPort::Set&)
+        cachedSort.binMask.forEach(
+            [&](unsigned index, const RenderBin::Set&)
             {
                 Worklist::BatchListEntry* entry = worklist->_batchLists[index].head;
                 for (; entry; entry = entry->next)

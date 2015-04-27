@@ -10,7 +10,7 @@
 #include "Texture.h"
 #include "RenderBuffer.h"
 #include "TargetSet.h"
-#include "RenderPort.h"
+#include "RenderBin.h"
 
 namespace eigen
 {
@@ -39,13 +39,13 @@ namespace eigen
                                ~Renderer();
 
         Error                   initialize(const Config& config);
-        void                    cleanup();                      // For destruction order issues (optional, handled by dtor)
+        void                    cleanup();                      // Not required, but might help with tricky teardown issues
 
         Worklist*               openWorklist(RenderPlan* plan); // Call this to begin rendering
 
         void                    commenceWork();
 
-        RenderPort*             getPort(const char* name);
+        RenderBin*              getBin(const char* name);
         unsigned                getFrameNumber() const;
 
         DisplayPtr              createDisplay();
@@ -57,53 +57,53 @@ namespace eigen
         //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                                struct PlatformDetails;
+                                    struct PlatformDetails;
     protected:
 
-        friend void             DestroyRefCounted(Display*);
-        friend void             DestroyRefCounted(Texture*);
-        friend void             DestroyRefCounted(RenderBuffer*);
-        friend void             DestroyRefCounted(TargetSet*);
-        friend void             DestroyRefCounted(RenderPlan*);
+        friend void                 DestroyRefCounted(Display*);
+        friend void                 DestroyRefCounted(Texture*);
+        friend void                 DestroyRefCounted(RenderBuffer*);
+        friend void                 DestroyRefCounted(TargetSet*);
+        friend void                 DestroyRefCounted(RenderPlan*);
 
-        friend class            DisplayManager;
+        friend class                DisplayManager;
 
         struct DeadMeat
         {
-            void*               object;
-            DeleteFunc          deleteFunc;
-            unsigned            frameNumber;
+            void*                   object;
+            DeleteFunc              deleteFunc;
+            unsigned                frameNumber;
         };
 
-        Error                   platformInit(const Config& config);
-        void                    platformCleanup();
+        Error                       platformInit(const Config& config);
+        void                        platformCleanup();
 
-                                template<class T>
-        void                    scheduleDeletion(T* obj, unsigned delay);
+                                    template<class T>
+        void                        scheduleDeletion(T* obj, unsigned delay);
 
-        enum {                  MaxWorklists = 12 };
+        enum {                      MaxWorklists = 12 };
 
-        Config                  _config;
+        Config                      _config;
 
-        DisplayManager          _displayManager;
-        BlockAllocator          _textureAllocator;
-        BlockAllocator          _bufferAllocator;
-        BlockAllocator          _targetSetAllocator;
-        RenderPlanManager       _planManager;
-        FlagIssuer<RenderPort>  _portIssuer;
-        PodDeque<DeadMeat>      _deadMeat;
+        DisplayManager              _displayManager;
+        BlockAllocator              _textureAllocator;
+        BlockAllocator              _bufferAllocator;
+        BlockAllocator              _targetSetAllocator;
+        RenderPlanManager           _planManager;
+        SoftBitFlagAgent<RenderBin> _binAgent;
+        PodDeque<DeadMeat>          _deadMeat;
 
-        int8_t*                 _scratchMem         = 0;
+        int8_t*                     _scratchMem         = 0;
 
-        std::atomic<int8_t*>    _scratchAllocPtr    = 0;
-        int8_t*                 _scratchAllocEnd    = 0;
+        std::atomic<int8_t*>        _scratchAllocPtr    = 0;
+        int8_t*                     _scratchAllocEnd    = 0;
 
-        Worklist*               _openWorklistHead   = nullptr;
-        RenderDispatch          _workCoordinator;
+        Worklist*                   _openWorklistHead   = nullptr;
+        RenderDispatch              _workCoordinator;
 
-        unsigned                _frameNumber        = 0;
+        unsigned                    _frameNumber        = 0;
 
-        void*                   _platformDetails[8];
+        void*                       _platformDetails[8];
 
     public:
 
@@ -126,9 +126,9 @@ namespace eigen
         return display;
     }
 
-    inline RenderPort* Renderer::getPort(const char* name) throw()
+    inline RenderBin* Renderer::getBin(const char* name) throw()
     {
-        return _portIssuer.issue(name);
+        return _binAgent.issue(name);
     }
 
     inline unsigned Renderer::getFrameNumber() const
