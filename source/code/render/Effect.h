@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/RefCounted.h"
-#include "core/Flag.h"
+#include "core/SoftBitFlag.h"
 
 namespace eigen
 {
@@ -10,18 +10,17 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // ShaderAspect
+    // EffectAspect
     //
     // Represents a specific configuration of the shader pipeline for a certain look or
-    // technique. It's common for a shader to have both "normal" and "depth only" aspects, the
-    // latter being used to render shadowmaps.
+    // technique. For example, a "depth only" aspect might be used to render shadowmaps.
     //
 
-    enum {  MaxShaderAspects        = 64 };
+    enum {  MaxEffectAspects        = 64 };
 
-    class ShaderAspect :            public Flag<ShaderAspect, MaxShaderAspects>
+    class EffectAspect :            public SoftBitFlag<EffectAspect, MaxEffectAspects>
     {
-    protected:                      ShaderAspect() {}
+    protected:                      EffectAspect() {}
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -38,10 +37,13 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Shader
+    // Effect
+    //
+    // A configuration of the entire programmable GPU pipeline, including all applicable
+    // shader stages and render states.
     //
 
-    class Shader :                  public RefCounted<Shader>
+    class Effect :                  public RefCounted<Effect>
     {
     public:
 
@@ -56,14 +58,14 @@ namespace eigen
         {
             BufferInfo*             buffers;
             unsigned                bufferCount;
-            ShaderAspect::Set       aspects;
+            EffectAspect::Set       aspects;
         };
 
         const Info&                 getInfo() const;
 
     protected:
-                                    Shader(const Info& info);
-                                    ~Shader();
+                                    Effect(const Info& info);
+                                    ~Effect();
 
         Info                        _info;
     };

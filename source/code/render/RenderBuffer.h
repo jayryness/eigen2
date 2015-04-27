@@ -3,7 +3,7 @@
 #include "RenderStruct.h"
 #include "core/RefCounted.h"
 #include "core/Error.h"
-#include "core/EnumBits.h"
+#include "core/BitMaskOps.h"
 
 namespace eigen
 {
@@ -14,8 +14,8 @@ namespace eigen
     //
     // A one-dimensional GPU resource used for vertices, indices, shader constants, intermediate results, etc.
     // Configuration of RenderBuffers is tricky and requires complete knowledge of how the buffer is to be used by
-    // the shader. For this reason it isn't recommended to configure them manually, but instead to get the configuration
-    // from the shader. TODO
+    // the Effect. For this reason it isn't recommended to configure them manually, but instead to get the
+    // configuration from the Effect. TODO
     //
 
     class RenderBuffer : public RefCounted<RenderBuffer>
@@ -25,18 +25,18 @@ namespace eigen
         enum class Arena        : uint8_t
         {
             GpuExclusive = 0,
-            Cooperative,                // CPU rewritable
-            ShaderVars                  // [requires Bindings == None]
+            Cooperative,                    // CPU rewritable
+            ShaderVars                      // CPU rewritable [requires Bindings == None]
         };
 
         enum class Bindings     : uint8_t
         {
             None                = 0,
-            FunctionArgs        = 1<<0, // higher-order GPU programming
-            Scratch             = 1<<1, // read/write from any shader
-            Vertices            = 1<<2, // vertex shader stream-in
-            Indices             = 1<<3, // input assembler stream-in
-            RenderTarget        = 1<<4, // pixel shader output [probably requires Arena == GpuExclusive]
+            FunctionArgs        = 1<<0,     // higher-order GPU programming
+            Scratch             = 1<<1,     // read/write from any shader
+            Vertices            = 1<<2,     // vertex shader stream-in
+            Indices             = 1<<3,     // input assembler stream-in
+            RenderTarget        = 1<<4,     // pixel shader output [probably requires Arena == GpuExclusive]
         };
 
         struct Config
@@ -74,7 +74,7 @@ namespace eigen
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    EIGEN_DEFINE_ENUM_BIT_OPS(RenderBuffer::Bindings)
+    EIGEN_DEFINE_BIT_MASK_OPS(RenderBuffer::Bindings)
 
     inline RenderBuffer::RenderBuffer()
     {

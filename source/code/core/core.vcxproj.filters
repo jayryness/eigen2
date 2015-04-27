@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="RefCounted.h" />
     <ClInclude Include="Error.h" />
-    <ClInclude Include="EnumBits.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="hash.h" />
@@ -11,7 +10,8 @@
     <ClInclude Include="PodArray.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="PodDeque.h" />
-    <ClInclude Include="Flag.h" />
+    <ClInclude Include="SoftBitFlag.h" />
+    <ClInclude Include="BitMaskOps.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Error.cpp" />

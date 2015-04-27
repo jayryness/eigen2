@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include "RenderPort.h"
+#include "RenderBin.h"
 #include "RenderPlan.h"
 
 namespace eigen
@@ -28,7 +28,12 @@ namespace eigen
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
 
-        void                commitBatch(RenderBatch* batch, const RenderPort* port, float sortDepth);
+        void                commitBatch(RenderBatch* batch, const RenderBin* bin, float sortDepth);
+
+        // TODO - plural RenderBin, defined by Effect (referenced by RenderBatch)
+        // API then becomes:
+        //void                commitBatch(RenderBatch* batch, const RenderBin::Set& binSelection, float sortDepth);
+
         void                finish();
 
         //
@@ -54,13 +59,13 @@ namespace eigen
 
         struct BatchList
         {
-            BatchListEntry* head;   // could make this atomic
-            int             count;  // and this
+            BatchListEntry* head;
+            int             count;
         };
 
         struct CachedSort
         {
-            RenderPort::Set ports;
+            RenderBin::Set  binMask;
             SortBatch*      batches;
             unsigned        count;
         };
@@ -80,8 +85,8 @@ namespace eigen
 
         static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
 
-        SortCacheEntry&     findCachedDepthSort(const RenderPort::Set& ports) const; 
-        SortCacheEntry&     findCachedPerfSort(const RenderPort::Set& ports) const; 
+        SortCacheEntry&     findCachedDepthSort(const RenderBin::Set& bins) const; 
+        SortCacheEntry&     findCachedPerfSort(const RenderBin::Set& bins) const; 
 
         Worklist*           _next               = nullptr;
         Renderer*           _renderer           = nullptr;
@@ -91,16 +96,16 @@ namespace eigen
         int8_t*             _bufferEnd          = nullptr;
         SortCacheEntry*     _perfSortCache      = nullptr;
         SortCacheEntry*     _depthSortCache     = nullptr;
-        RenderPort::Set     _ports;
+        RenderBin::Set      _binMask;
         unsigned            _stagesCount        = 0;
         unsigned            _sortCacheMask      = 0;
-        unsigned            _portRangeStart     = 0;
-        unsigned            _portRangeEnd       = 0;
+        unsigned            _binRangeStart      = 0;
+        unsigned            _binRangeEnd        = 0;
     };
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedDepthSort(const RenderPort::Set& ports) const
+    inline Worklist::SortCacheEntry& Worklist::findCachedDepthSort(const RenderBin::Set& bins) const
     {
-        unsigned hash = ports.hash();
+        unsigned hash = bins.hash();
 
         for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
         {
@@ -112,9 +117,9 @@ namespace eigen
         }
     }
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(const RenderPort::Set& ports) const
+    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(const RenderBin::Set& bins) const
     {
-        unsigned hash = ports.hash();
+        unsigned hash = bins.hash();
 
         for (unsigned i = hash & _sortCacheMask; ; i = (i+1) & _sortCacheMask)
         {
