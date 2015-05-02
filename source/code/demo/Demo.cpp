@@ -126,40 +126,6 @@ void Demo::run()
 {
     printf("Initializing...");
 
-    {
-        eigen::BitSet<128> mask;
-        unsigned start, end;
-        mask.getRange(start, end);
-        unsigned hash = mask.hash() & 0xff;
-        mask.complement();
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask.set(0, false);
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask >>= 1;
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask.complement();
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask.set(0, true);
-        hash = mask.hash() & 0xff;
-        mask.set(1, true);
-        hash = mask.hash() & 0xff;
-        mask.set(2, true);
-        hash = mask.hash() & 0xff;
-        mask.set(3, true);
-        hash = mask.hash() & 0xff;
-        mask <<= 27;
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask >>= 4;
-        hash = mask.hash() & 0xff;
-        mask.getRange(start, end);
-        mask.clear();
-    }
-
     init();
     RECT clientRect;
     GetClientRect(_hwnd, &clientRect);
@@ -198,14 +164,8 @@ void Demo::run()
             buffer.ptr->initialize(cfg);
         }
 
-        //Eigen::Display* display = system.GetDisplaySystem().NextDisplay();
-
-        //Eigen::Renderer& renderer = system.GetRenderer();
-        const eigen::RenderBin* bin = renderer.getBin("One");
-        renderer.getBin("One");
-        renderer.getBin("Two");
-        renderer.getBin("Three");
-        bin = renderer.getBin("Four");
+        const eigen::RenderBin* bin = renderer.getBin("It's a bin");
+        const eigen::RenderBin* anotherBin = renderer.getBin("It's another bin");
 
         eigen::RenderPlanPtr plan = renderer.createPlan();
 
@@ -219,13 +179,13 @@ void Demo::run()
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::IncreasingDepth;
-            batchStage.attachBin(bin);
+            batchStage.attachBin(anotherBin);
         }
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::DecreasingDepth;
             batchStage.attachBin(bin);
-            batchStage.attachBin(renderer.getBin("Foo"));
+            batchStage.attachBin(anotherBin);
         }
         error = plan.ptr->validate();
         if (Failed(error))
@@ -235,29 +195,14 @@ void Demo::run()
             return;
         }
 
-        //eigen::PipelinePtr pipeline = renderer.createPipeline();
-        //pipeline.ptr->initialize(4);
-
-        //eigen::ClearStage clearStage;
-        //clearStage.targets = displayTargets.ptr;
-        //clearStage.flags = eigen::ClearStage::Flags::Color_Depth_Stencil;
-        //pipeline.ptr->addStage(clearStage);
-
-        //Eigen::TextureSystem& textureSystem = system.GetTextureSystem();
-        //eigen::TextureTargetPtr::Config targetCfg;
-        //targetCfg.setWidth(clientRect.right - clientRect.left);
-        //targetCfg.setHeight(clientRect.bottom - clientRect.top);
-        //targetCfg.setFormat(eigen::Format::RGB10_A2);
-        //eigen::TextureTargetPtr target = renderer.CreateTarget(targetCfg);//display->GetTarget();// 
-
-        //Eigen::TargetGroupPtr testGroup = textureSystem.CreateTargetGroup(target.ptr);
-
         printf(" done.\n");
 
         HWND consoleHwnd = GetConsoleWindow();
         ShowWindow(consoleHwnd, SW_MINIMIZE);
 
         printf("Running.\n");
+
+        eigen::RenderBatch* batch = nullptr;    // no batch creation API yet!
 
         while (!_quit)
         {
@@ -269,29 +214,15 @@ void Demo::run()
 
             eigen::BatchQueue* batchQ = renderer.openBatchQueue(plan.ptr);
 
-            eigen::RenderBatch* batch = nullptr;    // no batch creation API yet
-            batchQ->commitBatch(batch, bin, 0.f);
+            batchQ->commitBatch(batch, bin,        0.f);
+            batchQ->commitBatch(batch, anotherBin, 1.f);
+            batchQ->commitBatch(batch, bin,        2.f);
+            batchQ->commitBatch(batch, anotherBin, 3.f);
 
             batchQ->finish();
 
             renderer.commenceWork();
 
-            //Eigen::Renderer& renderer = system.GetRenderer();
-            //Eigen::RenderContext* context = renderer.BeginContext();
-            //context->CommitBatch(port, Eigen::RenderBatch(), 0.f);
-            //Eigen::Stage::Info stageInfo;
-            //stageInfo.type = Eigen::Stage::cType_Clear;
-            //stageInfo.clearParams.flags = Eigen::Stage::cClearFlag_Color;
-            //stageInfo.clearParams.colors[0][0] = 0.7f;
-            //stageInfo.clearParams.colors[0][1] = 0.8f;
-            //stageInfo.clearParams.colors[0][2] = 0.9f;
-            //stageInfo.clearParams.colors[0][3] = 1.f;
-            //stageInfo.targetGroup = testGroup;
-            //Eigen::Stage stage(stageInfo);
-            //renderer.EndContext(context, &stage, 1);
-            //system.SubmitFrame();
-
-            //system.GetDisplaySystem().PresentAll();
             Sleep(0);
         }
     }
