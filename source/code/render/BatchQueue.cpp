@@ -1,10 +1,10 @@
-#include "Worklist.h"
+#include "BatchQueue.h"
 #include "Renderer.h"
 
 namespace eigen
 {
 
-    Worklist* Worklist::Create(Renderer* renderer, const RenderPlan* plan)
+    BatchQueue* BatchQueue::Create(Renderer* renderer, const RenderPlan* plan)
     {
         unsigned binRangeStart, binRangeEnd;
         plan->_binMask.getRange(binRangeStart, binRangeEnd);
@@ -16,39 +16,39 @@ namespace eigen
         uintptr_t sizeOfPerfSortCache = sizeof(SortCacheEntry) * (sortCacheMask+1);
         uintptr_t sizeOfDepthSortCache = sizeof(SortCacheEntry) * (sortCacheMask+1);
 
-        uintptr_t bytes = sizeof(Worklist) + sizeOfBatchLists + sizeOfStages + sizeOfPerfSortCache + sizeOfDepthSortCache + ChunkSize;
-        Worklist* worklist = (Worklist*)renderer->scratchAlloc(bytes);
-        assert(worklist != nullptr); // out of scratch memory TODO
+        uintptr_t bytes = sizeof(BatchQueue) + sizeOfBatchLists + sizeOfStages + sizeOfPerfSortCache + sizeOfDepthSortCache + ChunkSize;
+        BatchQueue* batchQ = (BatchQueue*)renderer->scratchAlloc(bytes);
+        assert(batchQ != nullptr); // out of scratch memory TODO
 
-        worklist->_renderer = renderer;
-        worklist->_batchLists = (BatchList*)(worklist + 1) - binRangeStart;    // subtract start here instead of offsetting later
-        worklist->_stages = (Stage*)(worklist->_batchLists + binRangeEnd);
-        worklist->_perfSortCache = (SortCacheEntry*)((int8_t*)worklist->_stages + sizeOfStages);
-        worklist->_depthSortCache = worklist->_perfSortCache + sortCacheMask+1;
-        worklist->_buffer = (int8_t*)worklist->_depthSortCache + sizeOfDepthSortCache;
-        worklist->_bufferEnd = worklist->_buffer + ChunkSize;
-        worklist->_binMask = plan->_binMask;
-        worklist->_stagesCount = plan->_count;
-        worklist->_sortCacheMask = sortCacheMask;
-        worklist->_binRangeStart = binRangeStart;
-        worklist->_binRangeEnd = binRangeEnd;
+        batchQ->_renderer = renderer;
+        batchQ->_batchLists = (BatchList*)(batchQ + 1) - binRangeStart;    // subtract start here instead of offsetting later
+        batchQ->_stages = (Stage*)(batchQ->_batchLists + binRangeEnd);
+        batchQ->_perfSortCache = (SortCacheEntry*)((int8_t*)batchQ->_stages + sizeOfStages);
+        batchQ->_depthSortCache = batchQ->_perfSortCache + sortCacheMask+1;
+        batchQ->_buffer = (int8_t*)batchQ->_depthSortCache + sizeOfDepthSortCache;
+        batchQ->_bufferEnd = batchQ->_buffer + ChunkSize;
+        batchQ->_binMask = plan->_binMask;
+        batchQ->_stagesCount = plan->_count;
+        batchQ->_sortCacheMask = sortCacheMask;
+        batchQ->_binRangeStart = binRangeStart;
+        batchQ->_binRangeEnd = binRangeEnd;
 
-        //memcpy(worklist->_sortMasks, plan->_sortMasks, sizeof(worklist->_sortMasks));
+        //memcpy(batchQ->_sortMasks, plan->_sortMasks, sizeof(batchQ->_sortMasks));
 
         // copy stages into scratch memory
-        memcpy(worklist->_stages, plan->_start, (int8_t*)plan->_end - (int8_t*)plan->_start);
+        memcpy(batchQ->_stages, plan->_start, (int8_t*)plan->_end - (int8_t*)plan->_start);
 
         // clear batch slots
-        memset(worklist->_batchLists + binRangeStart, 0, sizeOfBatchLists);
+        memset(batchQ->_batchLists + binRangeStart, 0, sizeOfBatchLists);
 
         // clear sort caches
-        memset(worklist->_perfSortCache, 0, sizeOfPerfSortCache);
-        memset(worklist->_depthSortCache, 0, sizeOfDepthSortCache);
+        memset(batchQ->_perfSortCache, 0, sizeOfPerfSortCache);
+        memset(batchQ->_depthSortCache, 0, sizeOfDepthSortCache);
 
-        return worklist;
+        return batchQ;
     }
 
-    void Worklist::commitBatch(RenderBatch* batch, const RenderBin* bin, float sortDepth)
+    void BatchQueue::commitBatch(RenderBatch* batch, const RenderBin* bin, float sortDepth)
     {
         // Batch is ignored if the pipeline doesn't reference this bin
 
@@ -90,7 +90,7 @@ namespace eigen
         batchList.count++;
     }
 
-    void Worklist::finish()
+    void BatchQueue::finish()
     {
         _binMask.clear();
         _renderer = nullptr;

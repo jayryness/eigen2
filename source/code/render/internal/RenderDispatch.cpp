@@ -27,9 +27,9 @@ namespace eigen
     struct RenderDispatch::SortJob
     {
         SortJob*                next;
-        Worklist*               worklist;
+        BatchQueue*             batchQ;
         BatchStage::SortType    sortType;
-        Worklist::CachedSort    cachedSort;
+        BatchQueue::CachedSort  cachedSort;
 
         void execute();
     };
@@ -84,25 +84,25 @@ namespace eigen
         _head = nullptr;
     }
 
-    inline RenderDispatch::SortJob* RenderDispatch::createSortJob(Worklist* worklist, unsigned count)
+    inline RenderDispatch::SortJob* RenderDispatch::createSortJob(BatchQueue* batchQ, unsigned count)
     {
-        unsigned bytes = sizeof(SortJob) + sizeof(Worklist::SortBatch) * count;
+        unsigned bytes = sizeof(SortJob) + sizeof(BatchQueue::SortBatch) * count;
         SortJob* job = (SortJob*)_renderer.scratchAlloc(bytes);
 
         job->next = nullptr;
-        job->worklist = worklist;
+        job->batchQ = batchQ;
         job->cachedSort.count = count;
-        job->cachedSort.batches = (Worklist::SortBatch*)(job + 1);
+        job->cachedSort.batches = (BatchQueue::SortBatch*)(job + 1);
 
         return job;
     }
 
-    void RenderDispatch::addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd)
+    void RenderDispatch::addBatchQueueJobs(BatchQueue* batchQ, SortJob**& sortJobTail, StageJob*& stageJobEnd)
     {
         unsigned submissionCost = 0;
 
-        Stage* stage = worklist->_stages;
-        for (unsigned stageCount = worklist->_stagesCount; stageCount > 0; stageCount--, stage = stage->advance())
+        Stage* stage = batchQ->_stages;
+        for (unsigned stageCount = batchQ->_stagesCount; stageCount > 0; stageCount--, stage = stage->advance())
         {
             stage->targets->_touch(_renderer.getFrameNumber());
 
@@ -126,7 +126,7 @@ namespace eigen
                 stageJobEnd++;
                 continue;
             default:
-                assert(false);  // worklist is corrupt
+                assert(false);  // batchQ is corrupt
                 return;
             }
 
@@ -136,7 +136,7 @@ namespace eigen
             batchStage->attachedBins.forEach(
                 [&](unsigned binIndex, const RenderBin::Set& )
                 {
-                    count += worklist->_batchLists[binIndex].count;
+                    count += batchQ->_batchLists[binIndex].count;
                 }
             );
 
@@ -145,10 +145,10 @@ namespace eigen
 
             submissionCost += count;
 
-            Worklist::SortCacheEntry& sortCacheEntry = isDepthSort ? worklist->findCachedDepthSort(batchStage->attachedBins) : worklist->findCachedPerfSort(batchStage->attachedBins);
+            BatchQueue::SortCacheEntry& sortCacheEntry = isDepthSort ? batchQ->findCachedDepthSort(batchStage->attachedBins) : batchQ->findCachedPerfSort(batchStage->attachedBins);
             if (sortCacheEntry.cached == nullptr)
             {
-                SortJob* job = createSortJob(worklist, count);
+                SortJob* job = createSortJob(batchQ, count);
                 job->sortType = isDepthSort ? BatchStage::SortType::IncreasingDepth : BatchStage::SortType::Performance;
                 job->cachedSort.binMask = batchStage->attachedBins;
 
@@ -166,17 +166,17 @@ namespace eigen
         }
     }
 
-    void RenderDispatch::prepareWork(Worklist* head)
+    void RenderDispatch::prepareWork(BatchQueue* head)
     {
         assert(_head == nullptr);
         _head = head;
 
-        // Count total stages across all worklists
+        // Count total stages across all batchQs
 
         _stageJobCount = 0;
-        for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
+        for (BatchQueue* batchQ = _head; batchQ; batchQ = batchQ->_next)
         {
-            _stageJobCount += worklist->_stagesCount;
+            _stageJobCount += batchQ->_stagesCount;
         }
 
         // Populate sort jobs and stage jobs
@@ -187,9 +187,9 @@ namespace eigen
         _stageJobs = (StageJob*)_renderer.scratchAlloc(sizeof(StageJob) * _stageJobCount);
         StageJob* stageJobEnd = _stageJobs;
 
-        for (Worklist* worklist = _head; worklist; worklist = worklist->_next)
+        for (BatchQueue* batchQ = _head; batchQ; batchQ = batchQ->_next)
         {
-            addWorklistJobs(worklist, sortJobTail, stageJobEnd);
+            addBatchQueueJobs(batchQ, sortJobTail, stageJobEnd);
         }
     }
 
@@ -224,7 +224,7 @@ namespace eigen
         cachedSort.binMask.forEach(
             [&](unsigned index, const RenderBin::Set&)
             {
-                Worklist::BatchListEntry* entry = worklist->_batchLists[index].head;
+                BatchQueue::BatchListEntry* entry = batchQ->_batchLists[index].head;
                 for (; entry; entry = entry->next)
                 {
                     assert(count < cachedSort.count);

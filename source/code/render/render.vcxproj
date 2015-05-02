@@ -90,7 +90,7 @@
     <ClInclude Include="RenderStruct.h" />
     <ClInclude Include="Effect.h" />
     <ClInclude Include="Stage.h" />
-    <ClInclude Include="Worklist.h" />
+    <ClInclude Include="BatchQueue.h" />
     <ClInclude Include="Display.h" />
     <ClInclude Include="dx11\commonDx11.h" />
     <ClInclude Include="dx11\DisplayDx11.h" />
@@ -117,7 +117,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="TargetSet.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="Worklist.cpp" />
+    <ClCompile Include="BatchQueue.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

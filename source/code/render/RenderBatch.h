@@ -22,7 +22,7 @@ namespace eigen
     //
     // There are two ways to create a RenderBatch:
     //   1. Renderer::createBatch, makes a variable-lifetime batch, which holds references to its resources
-    //   2. Worklist::transientBatch, makes a single-frame disposable batch in scratch memory
+    //   2. BatchQueue::transientBatch, makes a single-frame disposable batch in scratch memory
     //
     // Note that the actual memory footprint of a RenderBatch varies with the number and size of associated parameter
     // blocks dictated by the Effect.
@@ -32,7 +32,7 @@ namespace eigen
     {
     public:
         // Renderer::createBatch
-        // Worklist::transientBatch
+        // BatchQueue::transientBatch
 
         // TODO Effect has complete batch prototype so new batches can be initialized with memcpy
 

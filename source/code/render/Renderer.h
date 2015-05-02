@@ -5,7 +5,7 @@
 #include "core/RefCounted.h"
 #include "core/PodDeque.h"
 #include "core/Error.h"
-#include "Worklist.h"
+#include "BatchQueue.h"
 #include "RenderPlan.h"
 #include "Texture.h"
 #include "RenderBuffer.h"
@@ -41,7 +41,7 @@ namespace eigen
         Error                   initialize(const Config& config);
         void                    cleanup();                      // Not required, but might help with tricky teardown issues
 
-        Worklist*               openWorklist(RenderPlan* plan); // Call this to begin rendering
+        BatchQueue*             openBatchQueue(RenderPlan* plan); // Call this to begin rendering
 
         void                    commenceWork();
 
@@ -81,7 +81,7 @@ namespace eigen
                                     template<class T>
         void                        scheduleDeletion(T* obj, unsigned delay);
 
-        enum {                      MaxWorklists = 12 };
+        enum {                      MaxBatchQueues = 12 };
 
         Config                      _config;
 
@@ -98,7 +98,7 @@ namespace eigen
         std::atomic<int8_t*>        _scratchAllocPtr    = 0;
         int8_t*                     _scratchAllocEnd    = 0;
 
-        Worklist*                   _openWorklistHead   = nullptr;
+        BatchQueue*                 _openBatchQueueHead   = nullptr;
         RenderDispatch              _workCoordinator;
 
         unsigned                    _frameNumber        = 0;

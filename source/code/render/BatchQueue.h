@@ -12,16 +12,16 @@ namespace eigen
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Worklist
+    // BatchQueue
     //
     // Accumulates all the batches (draw calls) to be issued via a RenderPlan.
     //
-    // Use Renderer::openWorklist() to acquire one.
+    // Use Renderer::openBatchQueue() to acquire one.
     //
-    // TODO - Is it threadsafe, or one thread per worklist and merge downsteam?
+    // TODO - Is it threadsafe, or one thread per batchQ and merge downsteam?
     //
 
-    class Worklist
+    class BatchQueue
     {
     public:
 
@@ -83,12 +83,12 @@ namespace eigen
                             friend class Renderer;
                             friend class RenderDispatch;
 
-        static Worklist*    Create(Renderer* renderer, const RenderPlan* plan);
+        static BatchQueue*    Create(Renderer* renderer, const RenderPlan* plan);
 
         SortCacheEntry&     findCachedDepthSort(const RenderBin::Set& bins) const; 
         SortCacheEntry&     findCachedPerfSort(const RenderBin::Set& bins) const; 
 
-        Worklist*           _next               = nullptr;
+        BatchQueue*           _next               = nullptr;
         Renderer*           _renderer           = nullptr;
         Stage*              _stages             = nullptr;
         BatchList*          _batchLists         = nullptr;
@@ -103,7 +103,7 @@ namespace eigen
         unsigned            _binRangeEnd        = 0;
     };
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedDepthSort(const RenderBin::Set& bins) const
+    inline BatchQueue::SortCacheEntry& BatchQueue::findCachedDepthSort(const RenderBin::Set& bins) const
     {
         unsigned hash = bins.hash();
 
@@ -117,7 +117,7 @@ namespace eigen
         }
     }
 
-    inline Worklist::SortCacheEntry& Worklist::findCachedPerfSort(const RenderBin::Set& bins) const
+    inline BatchQueue::SortCacheEntry& BatchQueue::findCachedPerfSort(const RenderBin::Set& bins) const
     {
         unsigned hash = bins.hash();
 
@@ -131,7 +131,7 @@ namespace eigen
         }
     }
 
-    inline bool Worklist::SortBatch::operator<(const SortBatch& other) const
+    inline bool BatchQueue::SortBatch::operator<(const SortBatch& other) const
     {
         return sortKey < other.sortKey;
     }

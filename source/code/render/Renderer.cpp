@@ -56,35 +56,35 @@ namespace eigen
         renderer.scheduleDeletion(plan, 1);
     }
 
-    Worklist* Renderer::openWorklist(RenderPlan* plan)
+    BatchQueue* Renderer::openBatchQueue(RenderPlan* plan)
     {
         if (Failed(plan->validate()))
         {
             return nullptr;
         }
 
-        Worklist* worklist = Worklist::Create(this, plan);
-        worklist->_next = _openWorklistHead;
-        _openWorklistHead = worklist;
-        return worklist;
+        BatchQueue* batchQ = BatchQueue::Create(this, plan);
+        batchQ->_next = _openBatchQueueHead;
+        _openBatchQueueHead = batchQ;
+        return batchQ;
     }
 
     void Renderer::commenceWork()
     {
-        // Ensure that no worklists were left open
+        // Ensure that no batchQs were left open
         // Also reverse the open list to put it back into API order to aid debugging
 
-        Worklist* head = _openWorklistHead;
-        Worklist** tail = &head;
-        for (; _openWorklistHead; _openWorklistHead = _openWorklistHead->_next)
+        BatchQueue* head = _openBatchQueueHead;
+        BatchQueue** tail = &head;
+        for (; _openBatchQueueHead; _openBatchQueueHead = _openBatchQueueHead->_next)
         {
-            if (_openWorklistHead->_renderer)
+            if (_openBatchQueueHead->_renderer)
             {
                 // error TODO
-                assert(false);      // must call Worklist::finish() on all open worklists before commencing work
+                assert(false);      // must call BatchQueue::finish() on all open batchQs before commencing work
                 return;
             }
-            *tail = _openWorklistHead;
+            *tail = _openBatchQueueHead;
             tail = &(*tail)->_next;
         }
         *tail = nullptr;

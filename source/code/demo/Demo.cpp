@@ -201,11 +201,11 @@ void Demo::run()
         //Eigen::Display* display = system.GetDisplaySystem().NextDisplay();
 
         //Eigen::Renderer& renderer = system.GetRenderer();
-        const eigen::RenderBin* port = renderer.getBin("One");
+        const eigen::RenderBin* bin = renderer.getBin("One");
         renderer.getBin("One");
         renderer.getBin("Two");
         renderer.getBin("Three");
-        port = renderer.getBin("Four");
+        bin = renderer.getBin("Four");
 
         eigen::RenderPlanPtr plan = renderer.createPlan();
 
@@ -214,17 +214,17 @@ void Demo::run()
         clearStage.colors[0] = eigen::Float4::Xyzw(0.7f, 0.8f, 0.9f, 0.f);
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
-            batchStage.attachBin(port);
+            batchStage.attachBin(bin);
         }
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::IncreasingDepth;
-            batchStage.attachBin(port);
+            batchStage.attachBin(bin);
         }
         {
             eigen::BatchStage& batchStage = plan.ptr->addBatchStage(displayTargets.ptr);
             batchStage.sortType = eigen::BatchStage::SortType::DecreasingDepth;
-            batchStage.attachBin(port);
+            batchStage.attachBin(bin);
             batchStage.attachBin(renderer.getBin("Foo"));
         }
         error = plan.ptr->validate();
@@ -267,11 +267,12 @@ void Demo::run()
                 DispatchMessage(&msg);
             }
 
-            eigen::Worklist* worklist = renderer.openWorklist(plan.ptr);
+            eigen::BatchQueue* batchQ = renderer.openBatchQueue(plan.ptr);
 
-            worklist->commitBatch(nullptr, port, 0.f);
+            eigen::RenderBatch* batch = nullptr;    // no batch creation API yet
+            batchQ->commitBatch(batch, bin, 0.f);
 
-            worklist->finish();
+            batchQ->finish();
 
             renderer.commenceWork();
 
@@ -312,9 +313,7 @@ int main(int argc, const char** argv)
     eigen::Mallocator* mallocator = eigen::Mallocator::Get();
     if (mallocator->getCount())
     {
-        printf("---------------------------------------------\n");
-        printf("Memory leak detected: %d unfreed allocations!\n", mallocator->getCount());
-        printf("---------------------------------------------\n");
+        printf("Leak detected: %d unfreed allocations!\n", mallocator->getCount());
 
         DebugBreak();
 
@@ -322,9 +321,7 @@ int main(int argc, const char** argv)
     }
     else
     {
-        printf("----------------\n");
-        printf("No memory leaks.\n");
-        printf("----------------\n");
+        printf("No leaks.\n");
     }
 
     printf("\n%s exit in ", result == 0 ? "Clean" : "Dirty");

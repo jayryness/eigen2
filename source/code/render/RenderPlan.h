@@ -9,7 +9,7 @@ namespace eigen
     //
     // RenderPlan
     //
-    // A sequence of Stages executed by the renderer to process a Worklist
+    // A sequence of Stages executed by the renderer to process a BatchQueue
     //
 
     class RenderPlan :          public RefCounted<RenderPlan>
@@ -34,15 +34,15 @@ namespace eigen
         RenderPlanManager*      getManager() const;
 
     protected:
-                                friend class Worklist;
+                                friend class BatchQueue;
                                 friend void Delete<RenderPlan>(RenderPlan*);
 
                                 RenderPlan();
                                 ~RenderPlan();
 
         RenderPlanManager*      _manager        = 0;
-        RenderBin::Set         _binMask;
-        RenderBin::Set         _sortMasks[BatchStage::SortType::Count];
+        RenderBin::Set          _binMask;
+        RenderBin::Set          _sortMasks[BatchStage::SortType::Count];
         Stage*                  _start          = 0;
         Stage*                  _end            = 0;
         Stage*                  _validated      = 0;

@@ -3,11 +3,11 @@
 #include "core/memory.h"
 #include "core/math.h"
 #include "../RenderBin.h"
-#include "../Worklist.h"    // TODO find better home for StageJob so this isn't needed
+#include "../BatchQueue.h"  // TODO find better home for StageJob so this isn't needed
 
 namespace eigen
 {
-    class Worklist;
+    class BatchQueue;
     class Renderer;
     struct BatchStage;
 
@@ -22,7 +22,7 @@ namespace eigen
         void                        initialize(Allocator* allocator, unsigned submissionThreads);
 
         void                        sync();
-        void                        prepareWork(Worklist* head);
+        void                        prepareWork(BatchQueue* head);
         void                        kick();
 
         void                        stop();
@@ -34,13 +34,13 @@ namespace eigen
                                     struct StageJob;
 
         void                        asyncRun();
-        void                        addWorklistJobs(Worklist* worklist, SortJob**& sortJobTail, StageJob*& stageJobEnd);
-        SortJob*                    createSortJob(Worklist* worklist, unsigned count);
+        void                        addBatchQueueJobs(BatchQueue* batchQ, SortJob**& sortJobTail, StageJob*& stageJobEnd);
+        SortJob*                    createSortJob(BatchQueue* batchQ, unsigned count);
         void                        submitStageJob(unsigned context, const StageJob& stageJob);
 
         Renderer&                   _renderer;
 
-        Worklist*                   _head           = nullptr;
+        BatchQueue*                 _head           = nullptr;
 
         SortJob*                    _sortJobHead    = nullptr;
         StageJob*                   _stageJobs      = nullptr;
@@ -52,7 +52,7 @@ namespace eigen
     struct RenderDispatch::StageJob
     {
         Stage*                      stage;
-        Worklist::SortBatch*        batches;
+        BatchQueue::SortBatch*      batches;
         unsigned                    batchStart;
         unsigned                    batchEnd;
     };
