@@ -4,7 +4,7 @@
 namespace eigen
 {
 
-    inline DXGI_FORMAT TranslateFormat(Format format)
+    inline DXGI_FORMAT TranslateToDxgiFormat(Format format)
     {
         switch (format)
         {
@@ -27,7 +27,7 @@ namespace eigen
         }
     }
 
-    inline Format TranslateFormat(DXGI_FORMAT format)
+    inline Format TranslateFromDxgiFormat(DXGI_FORMAT format)
     {
         switch (format)
         {

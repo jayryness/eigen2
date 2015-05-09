@@ -47,7 +47,7 @@ namespace eigen
     {
     public:
 
-        struct BufferInfo
+        struct StreamInfo
         {
             const char*             semantic;
             RenderStruct*           layout;
@@ -56,8 +56,8 @@ namespace eigen
 
         struct Info
         {
-            BufferInfo*             buffers;
-            unsigned                bufferCount;
+            StreamInfo*             streams;
+            unsigned                streamCount;
             EffectAspect::Set       aspects;
         };
 

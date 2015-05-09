@@ -56,6 +56,8 @@ namespace eigen
         assert(hr == S_OK);
 
         // While we're at it... resize target if window changed
+        // - Actually, this should probably be more explicit and imperatively driven by the user, because window resize
+        //   often entails a chain reaction of non-trivial target (and possibly renderplan) adjustments
 
         //RECT rect;
         //GetClientRect(display->_hwnd, &rect);

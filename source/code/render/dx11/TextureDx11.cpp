@@ -69,7 +69,7 @@ namespace eigen
             desc.Height         = config.height;
             desc.Depth          = config.depth;
             desc.MipLevels      = config.lastMip+1;
-            desc.Format         = TranslateFormat(config.format);
+            desc.Format         = TranslateToDxgiFormat(config.format);
             desc.BindFlags      = TranslateBindFlags(config.usage, config.format);
             desc.CPUAccessFlags = TranslateCpuAccessFlags(config.usage);
             desc.MiscFlags      = TranslateMiscFlags(config.flags);
@@ -88,7 +88,7 @@ namespace eigen
             desc.Height             = config.height;
             desc.MipLevels          = config.lastMip+1;
             desc.ArraySize          = config.arrayLength > 0 ? config.arrayLength : 1;
-            desc.Format             = TranslateFormat(config.format);
+            desc.Format             = TranslateToDxgiFormat(config.format);
             desc.SampleDesc.Count   = (UINT)1 << (UINT)config.multisampling;
             desc.SampleDesc.Quality = 0;
             desc.BindFlags          = TranslateBindFlags(config.usage, config.format);
@@ -108,7 +108,7 @@ namespace eigen
             desc.Width          = config.width;
             desc.MipLevels      = config.lastMip+1;
             desc.ArraySize      = config.arrayLength > 0 ? config.arrayLength : 1;
-            desc.Format         = TranslateFormat(config.format);
+            desc.Format         = TranslateToDxgiFormat(config.format);
             desc.BindFlags      = TranslateBindFlags(config.usage, config.format);
             desc.CPUAccessFlags = TranslateCpuAccessFlags(config.usage);
             desc.MiscFlags      = TranslateMiscFlags(config.flags);
@@ -162,7 +162,7 @@ namespace eigen
         tex1d->GetDesc(&desc);
 
         _config = Config();
-        _config.format          = TranslateFormat(desc.Format);
+        _config.format          = TranslateFromDxgiFormat(desc.Format);
         _config.usage           = TranslateUsage(desc.BindFlags, desc.CPUAccessFlags);
         _config.flags           = TranslateFlags(desc.MiscFlags);
         _config.lastMip         = desc.MipLevels - 1;
@@ -178,7 +178,7 @@ namespace eigen
         tex2d->GetDesc(&desc);
 
         _config = Config();
-        _config.format          = TranslateFormat(desc.Format);
+        _config.format          = TranslateFromDxgiFormat(desc.Format);
         _config.usage           = TranslateUsage(desc.BindFlags, desc.CPUAccessFlags);
         _config.flags           = TranslateFlags(desc.MiscFlags);
         _config.lastMip         = desc.MipLevels - 1;
@@ -195,7 +195,7 @@ namespace eigen
         tex3d->GetDesc(&desc);
 
         _config = Config();
-        _config.format          = TranslateFormat(desc.Format);
+        _config.format          = TranslateFromDxgiFormat(desc.Format);
         _config.usage           = TranslateUsage(desc.BindFlags, desc.CPUAccessFlags);
         _config.flags           = TranslateFlags(desc.MiscFlags);
         _config.lastMip         = desc.MipLevels - 1;
